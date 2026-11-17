@@ -21,14 +21,14 @@ from estudapdf.service import run_query
 def main():
     load_dotenv(ROOT / ".env")
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--provedor", choices=["gemini", "ollama"], default=os.getenv("LLM_PROVIDER", "gemini"))
+    parser.add_argument("--provedor", choices=["gemini"], default="gemini")
     parser.add_argument("--modelo", default="")
     parser.add_argument("--timeout", type=int, default=180)
     parser.add_argument("--saida", type=Path, default=ROOT / "output" / "validacao-modelo.json")
     args = parser.parse_args()
     if args.saida.exists():
         parser.error("A saída já existe. Use outro nome para preservar o registro.")
-    model = args.modelo or os.getenv("LLM_MODEL" if args.provedor == "gemini" else "OLLAMA_MODEL", "")
+    model = args.modelo or os.getenv("LLM_MODEL", "")
     config = ProviderConfig(args.provedor, model, os.getenv("GEMINI_API_KEY", ""), os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"), args.timeout)
     config.validate()
     result = run_query("Como funciona a geração aumentada por recuperação RAG?", DocumentIndex(split_pages(demo_pages())), config)

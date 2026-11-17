@@ -21,7 +21,7 @@ class SummaryAppTests(unittest.TestCase):
             pages=(1, 2, 3, 4),
             calls_completed=1,
             elapsed_seconds=0.01,
-            provider="ollama",
+            provider="gemini",
             model="modelo-teste",
             citations=("P1-R1",),
             source_chunks=(Chunk("P1-R1", 1, "Texto educativo de referência.", "Seção"),),
@@ -41,9 +41,10 @@ class SummaryAppTests(unittest.TestCase):
 
     def test_summary_is_plain_text_and_range_change_invalidates_it(self):
         result = self.result()
-        with patch.dict(os.environ, {"LLM_PROVIDER": "ollama", "OLLAMA_MODEL": "modelo-teste"}), patch("estudapdf.frontend.summarize", return_value=result) as summarize:
+        with patch.dict(os.environ, {"LLM_PROVIDER": "gemini", "LLM_MODEL": "modelo-teste", "GEMINI_API_KEY": "chave-ficticia"}), patch("estudapdf.frontend.summarize", return_value=result) as summarize:
             app = self.app()
             app.radio[0].set_value("Resposta com IA").run()
+            next(box for box in app.checkbox if box.label.startswith("Autorizo enviar todo o texto")).check().run()
             self.summary_button(app).click().run()
             self.assertFalse(app.exception)
             self.assertTrue(any(item.value == result.text for item in app.text))
@@ -67,6 +68,7 @@ class SummaryAppTests(unittest.TestCase):
             # A autorização de perguntas permanece desmarcada: são ações distintas.
             query_consent = next(box for box in app.checkbox if box.label.startswith("Autorizo enviar minha pergunta"))
             self.assertFalse(query_consent.value)
+            next(box for box in app.checkbox if box.label.startswith("Autorizo enviar todo o texto")).check().run()
             self.summary_button(app).click().run()
             self.assertFalse(app.exception)
             summarize.assert_called_once()
@@ -74,11 +76,13 @@ class SummaryAppTests(unittest.TestCase):
 
     def test_failed_new_summary_does_not_display_old_success(self):
         result = self.result()
-        with patch.dict(os.environ, {"LLM_PROVIDER": "ollama", "OLLAMA_MODEL": "modelo-teste"}), patch("estudapdf.frontend.summarize", side_effect=[result, SummaryError("Falha após uma chamada.")]):
+        with patch.dict(os.environ, {"LLM_PROVIDER": "gemini", "LLM_MODEL": "modelo-teste", "GEMINI_API_KEY": "chave-ficticia"}), patch("estudapdf.frontend.summarize", side_effect=[result, SummaryError("Falha após uma chamada.")]):
             app = self.app()
             app.radio[0].set_value("Resposta com IA").run()
+            next(box for box in app.checkbox if box.label.startswith("Autorizo enviar todo o texto")).check().run()
             self.summary_button(app).click().run()
             self.assertTrue(any(item.value == result.text for item in app.text))
+            next(box for box in app.checkbox if box.label.startswith("Autorizo enviar todo o texto")).check().run()
             self.summary_button(app).click().run()
             self.assertFalse(app.exception)
             self.assertTrue(any("Falha após uma chamada" in item.value for item in app.error))
@@ -88,9 +92,10 @@ class SummaryAppTests(unittest.TestCase):
         result = self.result()
         result.citations = ()
         result.warning = "O modelo não indicou referências. Confira o material original."
-        with patch.dict(os.environ, {"LLM_PROVIDER": "ollama", "OLLAMA_MODEL": "modelo-teste"}), patch("estudapdf.frontend.summarize", return_value=result):
+        with patch.dict(os.environ, {"LLM_PROVIDER": "gemini", "LLM_MODEL": "modelo-teste", "GEMINI_API_KEY": "chave-ficticia"}), patch("estudapdf.frontend.summarize", return_value=result):
             app = self.app()
             app.radio[0].set_value("Resposta com IA").run()
+            next(box for box in app.checkbox if box.label.startswith("Autorizo enviar todo o texto")).check().run()
             self.summary_button(app).click().run()
             self.assertFalse(app.exception)
             self.assertTrue(any(item.value == result.warning for item in app.warning))

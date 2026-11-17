@@ -26,8 +26,8 @@ def main():
     load_dotenv(ROOT / ".env")
     config = None
     if args.gerar:
-        provider = os.getenv("LLM_PROVIDER", "gemini")
-        config = ProviderConfig(provider=provider, model=os.getenv("LLM_MODEL" if provider == "gemini" else "OLLAMA_MODEL", ""), api_key=os.getenv("GEMINI_API_KEY", ""), base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"), timeout=float(os.getenv("LLM_TIMEOUT_SECONDS", "90")))
+        provider = "gemini"
+        config = ProviderConfig(provider=provider, model=os.getenv("LLM_MODEL", ""), api_key=os.getenv("GEMINI_API_KEY", ""), base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"), timeout=float(os.getenv("LLM_TIMEOUT_SECONDS", "90")))
         config.validate()
     if args.saida.exists():
         parser.error("A saída já existe. Escolha outro nome para preservar o registro anterior.")

@@ -1,5 +1,10 @@
 # EstudaPDF
 
+A geração de respostas e resumos usa exclusivamente a API Gemini. Configure
+`GEMINI_API_KEY` no `.env` privado e escolha um modelo disponível na conta.
+O modo Somente busca permite consultar trechos sem geração. Os pilotos Ollama
+registrados nos materiais são históricos, anteriores à remoção desse suporte.
+
 Assistente de estudos com **RAG (geração aumentada por recuperação)** sobre um
 PDF escolhido pelo usuário. Encontra trechos relevantes e usa um modelo de
 linguagem para responder com referências à fonte.
@@ -144,16 +149,6 @@ pergunta não substitui a do resumo.
 As chamadas usam o endpoint REST `generateContent`. O prompt está em
 `src/estudapdf/prompts.py`; não há dependência de um framework de agentes.
 
-## Alternativa local com Ollama
-
-Se já tiver Ollama instalado, aberto e com um modelo disponível, selecione
-**Ollama · local**, consulte os modelos e informe o identificador. A URL padrão
-é `http://localhost:11434`; somente endereços locais são aceitos.
-O aplicativo não instala nem baixa modelos automaticamente.
-
-O texto e as evidências são enviados ao serviço local. A velocidade e a qualidade
-dependem do modelo e da máquina. Falhas de conexão, timeout e truncamento são
-mostradas, sem substituição por respostas fixas.
 
 ## Arquitetura e técnica de IA
 

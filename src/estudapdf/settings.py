@@ -36,5 +36,6 @@ def load_settings(root: Path, *, environ: Mapping[str, str] | None = None) -> di
         if name in process_values:
             value = process_values[name]
             settings[name] = "" if value is None else value
+    settings["LLM_PROVIDER"] = "gemini"
     return settings
 

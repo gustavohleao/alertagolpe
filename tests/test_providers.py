@@ -27,13 +27,11 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(result.text, "Resposta [P1-T1]")
         self.assertEqual(result.usage["totalTokenCount"], 25)
 
-    def test_ollama_real_protocol_shape(self):
-        def handler(request):
-            self.assertEqual(str(request.url), "http://localhost:11434/api/chat")
-            self.assertFalse(json.loads(request.content)["stream"])
-            return httpx.Response(200, json={"message": {"content": "Resposta"}, "done": True, "done_reason": "stop"})
-        result = generate("sistema", "prompt", ProviderConfig("ollama", "modelo-local:1b"), client=self.client(handler))
-        self.assertEqual(result.text, "Resposta")
+    def test_local_provider_is_rejected(self):
+        with self.assertRaises(ProviderError):
+            ProviderConfig("ollama", "modelo-local").validate()
+        with self.assertRaises(ProviderError):
+            list_models("ollama")
 
     def test_timeout_and_connection_errors_are_sanitized(self):
         for error in [httpx.ReadTimeout("segredo"), httpx.ConnectError("segredo")]:
@@ -41,7 +39,7 @@ class ProviderTests(unittest.TestCase):
                 def handler(request):
                     raise error
                 with self.assertRaises(ProviderError) as caught:
-                    generate("s", "p", ProviderConfig("ollama", "modelo"), client=self.client(handler))
+                    generate("s", "p", ProviderConfig("gemini", "modelo", "chave-ficticia"), client=self.client(handler))
                 self.assertNotIn("segredo", str(caught.exception))
 
     def test_http_error_does_not_expose_body_or_key(self):

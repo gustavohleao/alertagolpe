@@ -46,20 +46,15 @@ def _sidebar(settings: dict[str, str]):
         authorized = True
         if mode == "Resposta com IA":
             with st.expander("Configuração da IA", expanded=False):
-                choice = st.selectbox("Provedor", ["Gemini · API", "Ollama · local"], index=1 if settings["LLM_PROVIDER"] == "ollama" else 0)
-                provider_name = "ollama" if choice.startswith("Ollama") else "gemini"
-                if provider_name == "gemini":
-                    api_key = settings["GEMINI_API_KEY"].strip()
-                    signature = sha256(api_key.encode("utf-8")).hexdigest()
-                    if st.session_state.get("gemini_config_signature") != signature:
-                        st.session_state.pop("models_gemini", None)
-                        st.session_state["gemini_config_signature"] = signature
-                    if api_key:
-                        st.caption("Chave carregada automaticamente da configuração do projeto.")
-                    else:
-                        st.warning("Gemini ainda não configurado. Defina GEMINI_API_KEY no arquivo .env do projeto e atualize a página.")
+                api_key = settings["GEMINI_API_KEY"].strip()
+                signature = sha256(api_key.encode("utf-8")).hexdigest()
+                if st.session_state.get("gemini_config_signature") != signature:
+                    st.session_state.pop("models_gemini", None)
+                    st.session_state["gemini_config_signature"] = signature
+                if api_key:
+                    st.caption("Chave carregada automaticamente da configuração do projeto.")
                 else:
-                    st.caption("O Ollama deve estar aberto, com um modelo instalado. Somente endereços locais são aceitos.")
+                    st.warning("Gemini ainda não configurado. Defina GEMINI_API_KEY no arquivo .env do projeto e atualize a página.")
                 if st.button("Consultar modelos disponíveis", use_container_width=True, disabled=provider_name == "gemini" and not api_key):
                     try:
                         available = list_models(provider_name, api_key=api_key, base_url=base_url)
@@ -72,13 +67,11 @@ def _sidebar(settings: dict[str, str]):
                 if options:
                     default_model = st.selectbox("Modelos encontrados", options)
                 else:
-                    default_model = settings["LLM_MODEL" if provider_name == "gemini" else "OLLAMA_MODEL"]
+                    default_model = settings["LLM_MODEL"]
                 model_name = st.text_input("Identificador do modelo", value=default_model, key=f"model_{provider_name}_{default_model}", placeholder="Identificador disponível no provedor")
             if provider_name == "gemini":
                 authorized = st.checkbox("Autorizo enviar minha pergunta e os trechos recuperados à API Gemini.", value=False)
                 st.caption("Nas perguntas, enviamos apenas a pergunta e os trechos. O resumo usa o texto do intervalo escolhido e tem autorização própria na aba Resumir material. O uso pode consumir cota ou gerar cobrança.")
-            else:
-                st.caption("Geração no Ollama local. O tempo de resposta depende do modelo e do computador.")
         else:
             st.caption("Encontre passagens do material sem enviar dados a um modelo de IA.")
         st.divider()
@@ -183,7 +176,7 @@ def _about():
         st.markdown("### O que vale conferir")
         st.write("Sinônimos e perguntas vagas podem prejudicar a recuperação. PDFs escaneados precisam de OCR, fora deste protótipo; tabelas e colunas podem perder estrutura. Uma referência válida não garante interpretação correta. Confira sempre o trecho e seu contexto.")
         st.markdown("### Seus dados e o uso de IA")
-        st.write("PDFs e consultas não são gravados automaticamente no disco. O material fica no estado da sessão, sem cache global. Limpar a sessão remove suas referências no aplicativo, sem promessa de eliminação forense. Gemini recebe a pergunta e os trechos mediante autorização; Ollama os recebe no serviço local. Um registro baixado pode conter conteúdo documental.")
+        st.write("PDFs e consultas não são gravados automaticamente no disco. O material fica no estado da sessão, sem cache global. Limpar a sessão remove suas referências no aplicativo, sem promessa de eliminação forense. Gemini recebe a pergunta e os trechos mediante autorização. Um registro baixado pode conter conteúdo documental.")
         st.caption("O material de demonstração, o código e os textos foram elaborados com assistência de IA e precisam de revisão do grupo. Instruções no prompt não eliminam o risco de conteúdo malicioso no documento.")
 
 
@@ -214,15 +207,13 @@ def _summary_tab(mode: str, config: ProviderConfig, source_name: str):
         page_label = ("seção" if location == "seções" else "página") if len(plan.pages) == 1 else location
         call_label = "chamada" if plan.max_calls == 1 else "chamadas"
         html(f'<div class="summary-facts"><span>{icon("file",15)} {len(plan.pages)} {safe(page_label)} com texto</span><span>{icon("layers",15)} {total_chars} caracteres</span><span>{icon("spark",15)} Até {plan.max_calls} {call_label} de IA</span></div>')
-        st.caption("O número de chamadas depende do tamanho do texto e das sínteses intermediárias. Não há repetição automática. Documentos maiores podem levar vários minutos, especialmente no Ollama.")
+        st.caption("O número de chamadas depende do tamanho do texto e das sínteses intermediárias. Não há repetição automática. Documentos maiores podem levar vários minutos.")
         allow_external = False
         if mode != "Resposta com IA":
             st.info("Selecione Resposta com IA na barra lateral para gerar um resumo. A busca simples continua disponível na Sala de estudo.")
         elif config.provider == "gemini":
             allow_external = st.checkbox("Autorizo enviar todo o texto do intervalo selecionado à API Gemini para gerar o resumo.", value=False, key=f"summary_authorization_{scope}")
             st.caption("Isso abrange todo o texto extraído dessas páginas ou seções, não apenas os trechos de uma pergunta. Pode consumir cota ou gerar cobrança conforme sua conta.")
-        else:
-            st.caption("O texto do intervalo será enviado ao serviço Ollama local configurado.")
         submitted = st.button("Gerar resumo do material", type="primary", use_container_width=True, disabled=mode != "Resposta com IA")
         if submitted:
             st.session_state.pop("summary_result", None)
@@ -332,7 +323,7 @@ def render_app(root: Path) -> None:
                         can_run = False
                 if can_run:
                     try:
-                        message = "Consultando o modelo com as evidências encontradas. A geração local pode levar alguns minutos…" if active_config else "Encontrando trechos no seu material…"
+                        message = "Consultando o modelo com as evidências encontradas. A geração pode levar alguns minutos…" if active_config else "Encontrando trechos no seu material…"
                         with st.spinner(message):
                             st.session_state["result"] = run_query(question, st.session_state["index"], active_config)
                     except ValueError as exc:

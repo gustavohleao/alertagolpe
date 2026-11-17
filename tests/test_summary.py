@@ -68,11 +68,10 @@ class SummaryTests(unittest.TestCase):
         generate.assert_not_called()
 
     @patch("estudapdf.summary.generate")
-    def test_local_provider_does_not_require_external_consent(self, generate):
-        generate.side_effect = self.small_generation
-        result = summarize(prepare_summary([Page(1, "Conceitos do material.")]), ProviderConfig("ollama", "modelo-local"))
-        self.assertEqual(result.provider, "ollama")
-        self.assertEqual(result.calls_completed, 1)
+    def test_local_provider_is_rejected(self, generate):
+        with self.assertRaises(SummaryError):
+            summarize(prepare_summary([Page(1, "Texto do material.")]), ProviderConfig("ollama", "modelo-local"))
+        generate.assert_not_called()
 
     @patch("estudapdf.summary.generate")
     def test_invalid_inputs_and_plan_budget_fail_before_network(self, generate):
