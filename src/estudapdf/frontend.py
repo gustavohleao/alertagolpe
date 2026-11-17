@@ -1,5 +1,6 @@
 """Workspace do EstudaPDF: interface separada da recuperação e da geração."""
 
+from dataclasses import replace
 from hashlib import sha256
 import json
 from pathlib import Path
@@ -38,42 +39,12 @@ def _sidebar(settings: dict[str, str]):
             st.caption("Explore com nosso guia educativo de IA. As fontes são seções de exemplo, não páginas de PDF.")
         elif uploaded is not None:
             st.caption("Seu PDF substitui o exemplo. Use um material que você tem autorização para processar.")
-        st.divider()
-        html('<div class="sidebar-label">02 / SUA CONSULTA</div>')
-        mode = st.radio("Tipo de consulta", ["Somente busca", "Resposta com IA"], label_visibility="collapsed", help="A busca encontra trechos sem usar um modelo generativo. A resposta com IA usa o provedor configurado.")
-        provider_name, model_name, api_key = "gemini", "", ""
-        base_url = settings["OLLAMA_BASE_URL"]
-        authorized = True
-        if mode == "Resposta com IA":
-            with st.expander("Configuração da IA", expanded=False):
-                api_key = settings["GEMINI_API_KEY"].strip()
-                signature = sha256(api_key.encode("utf-8")).hexdigest()
-                if st.session_state.get("gemini_config_signature") != signature:
-                    st.session_state.pop("models_gemini", None)
-                    st.session_state["gemini_config_signature"] = signature
-                if api_key:
-                    st.caption("Chave carregada automaticamente da configuração do projeto.")
-                else:
-                    st.warning("Gemini ainda não configurado. Defina GEMINI_API_KEY no arquivo .env do projeto e atualize a página.")
-                if st.button("Consultar modelos disponíveis", use_container_width=True, disabled=provider_name == "gemini" and not api_key):
-                    try:
-                        available = list_models(provider_name, api_key=api_key, base_url=base_url)
-                        st.session_state[f"models_{provider_name}"] = available
-                        if not available:
-                            st.warning("Nenhum modelo de texto foi encontrado.")
-                    except ProviderError as exc:
-                        st.error(str(exc))
-                options = st.session_state.get(f"models_{provider_name}", [])
-                if options:
-                    default_model = st.selectbox("Modelos encontrados", options)
-                else:
-                    default_model = settings["LLM_MODEL"]
-                model_name = st.text_input("Identificador do modelo", value=default_model, key=f"model_{provider_name}_{default_model}", placeholder="Identificador disponível no provedor")
-            if provider_name == "gemini":
-                authorized = st.checkbox("Autorizo enviar minha pergunta e os trechos recuperados à API Gemini.", value=False)
-                st.caption("Nas perguntas, enviamos apenas a pergunta e os trechos. O resumo usa o texto do intervalo escolhido e tem autorização própria na aba Resumir material. O uso pode consumir cota ou gerar cobrança.")
-        else:
-            st.caption("Encontre passagens do material sem enviar dados a um modelo de IA.")
+        mode = "Resposta com IA"
+        api_key = settings["GEMINI_API_KEY"].strip()
+        model_name = settings["LLM_MODEL"].strip()
+        authorized = st.checkbox("Autorizo enviar minha pergunta e os trechos recuperados à API Gemini.", value=False)
+        if not api_key:
+            st.warning("O serviço de IA está aguardando configuração pelo responsável do aplicativo.")
         st.divider()
         html(f'<div class="sidebar-tip"><div class="tip-title">{icon("spark",16)} Uma pergunta de cada vez</div><p>Comece por um conceito específico. Use as palavras do material para encontrar boas evidências.</p></div>')
         if st.button("Limpar sessão", use_container_width=True):
@@ -82,7 +53,28 @@ def _sidebar(settings: dict[str, str]):
             st.session_state["upload_nonce"] = next_nonce
             st.rerun()
         html('<div class="sidebar-footer">ESTUDAPDF / PROJETO ACADÊMICO<br>IA Generativa · 2026</div>')
-    return uploaded, use_demo, mode, ProviderConfig(provider_name, model_name.strip(), api_key.strip(), base_url, _env_timeout(settings)), authorized
+    return uploaded, use_demo, mode, ProviderConfig("gemini", model_name, api_key, timeout=_env_timeout(settings)), authorized
+
+
+def _ready_config(config: ProviderConfig) -> ProviderConfig:
+    if not config.api_key:
+        raise ProviderError("O serviço de IA está aguardando configuração pelo responsável do aplicativo.")
+    if not config.model:
+        signature = sha256(config.api_key.encode("utf-8")).hexdigest()
+        cached = st.session_state.get("automatic_model")
+        if cached and cached[0] == signature:
+            model = cached[1]
+        else:
+            models = list_models("gemini", api_key=config.api_key)
+            eligible = [model for model in models if not any(word in model.lower() for word in ("image", "tts", "live", "audio", "robotics"))]
+            preferred = [model for model in eligible if "flash" in model.lower()]
+            if not eligible:
+                raise ProviderError("O serviço de IA não encontrou um modelo de texto disponível.")
+            model = (preferred or eligible)[0]
+            st.session_state["automatic_model"] = (signature, model)
+        config = replace(config, model=model)
+    config.validate()
+    return config
 
 
 def _load_material(uploaded, use_demo):
@@ -219,7 +211,7 @@ def _summary_tab(mode: str, config: ProviderConfig, source_name: str):
             st.session_state.pop("summary_result", None)
             progress = None
             try:
-                config.validate()
+                config = _ready_config(config)
                 if config.provider == "gemini" and not allow_external:
                     raise SummaryError("Autorize o envio do texto selecionado para gerar o resumo com Gemini.")
                 progress = st.progress(0.0, text="Preparando a leitura do material…")
@@ -314,7 +306,7 @@ def render_app(root: Path) -> None:
                 active_config = config if mode == "Resposta com IA" else None
                 if active_config is not None:
                     try:
-                        active_config.validate()
+                        active_config = _ready_config(active_config)
                     except ProviderError as exc:
                         st.error(str(exc))
                         can_run = False

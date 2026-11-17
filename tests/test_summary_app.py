@@ -32,18 +32,11 @@ class SummaryAppTests(unittest.TestCase):
     def summary_button(self, app):
         return next(button for button in app.button if button.label == "Gerar resumo do material")
 
-    @patch("estudapdf.frontend.summarize")
-    def test_search_mode_does_not_generate_summary(self, summarize):
-        app = self.app()
-        self.assertFalse(app.exception)
-        self.assertTrue(self.summary_button(app).disabled)
-        summarize.assert_not_called()
-
     def test_summary_is_plain_text_and_range_change_invalidates_it(self):
         result = self.result()
         with patch.dict(os.environ, {"LLM_PROVIDER": "gemini", "LLM_MODEL": "modelo-teste", "GEMINI_API_KEY": "chave-ficticia"}), patch("estudapdf.frontend.summarize", return_value=result) as summarize:
             app = self.app()
-            app.radio[0].set_value("Resposta com IA").run()
+
             next(box for box in app.checkbox if box.label.startswith("Autorizo enviar todo o texto")).check().run()
             self.summary_button(app).click().run()
             self.assertFalse(app.exception)
@@ -58,7 +51,7 @@ class SummaryAppTests(unittest.TestCase):
     def test_gemini_requires_its_own_summary_consent(self):
         with patch.dict(os.environ, {"LLM_PROVIDER": "gemini", "GEMINI_API_KEY": "chave-ficticia", "LLM_MODEL": "modelo-teste"}), patch("estudapdf.frontend.summarize", return_value=self.result()) as summarize:
             app = self.app()
-            app.radio[0].set_value("Resposta com IA").run()
+
             self.summary_button(app).click().run()
             self.assertFalse(app.exception)
             self.assertTrue(any("Autorize o envio do texto selecionado" in item.value for item in app.error))
@@ -78,7 +71,7 @@ class SummaryAppTests(unittest.TestCase):
         result = self.result()
         with patch.dict(os.environ, {"LLM_PROVIDER": "gemini", "LLM_MODEL": "modelo-teste", "GEMINI_API_KEY": "chave-ficticia"}), patch("estudapdf.frontend.summarize", side_effect=[result, SummaryError("Falha após uma chamada.")]):
             app = self.app()
-            app.radio[0].set_value("Resposta com IA").run()
+
             next(box for box in app.checkbox if box.label.startswith("Autorizo enviar todo o texto")).check().run()
             self.summary_button(app).click().run()
             self.assertTrue(any(item.value == result.text for item in app.text))
@@ -94,7 +87,7 @@ class SummaryAppTests(unittest.TestCase):
         result.warning = "O modelo não indicou referências. Confira o material original."
         with patch.dict(os.environ, {"LLM_PROVIDER": "gemini", "LLM_MODEL": "modelo-teste", "GEMINI_API_KEY": "chave-ficticia"}), patch("estudapdf.frontend.summarize", return_value=result):
             app = self.app()
-            app.radio[0].set_value("Resposta com IA").run()
+
             next(box for box in app.checkbox if box.label.startswith("Autorizo enviar todo o texto")).check().run()
             self.summary_button(app).click().run()
             self.assertFalse(app.exception)

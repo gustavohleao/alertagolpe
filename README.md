@@ -1,5 +1,11 @@
 # EstudaPDF
 
+A interface oferece diretamente perguntas e resumo do material. Provedor,
+chave e modelo são gerenciados no servidor. `LLM_MODEL` fixa o modelo usado;
+quando estiver vazio, o servidor seleciona automaticamente um modelo de texto
+disponível, dando preferência à família Flash. As confirmações de envio de
+conteúdo ao Gemini continuam disponíveis antes das operações.
+
 A geração de respostas e resumos usa exclusivamente a API Gemini. Configure
 `GEMINI_API_KEY` no `.env` privado e escolha um modelo disponível na conta.
 O modo Somente busca permite consultar trechos sem geração. Os pilotos Ollama
