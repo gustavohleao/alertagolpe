@@ -16,13 +16,19 @@ _PATHS = {
     "quote": '<path d="M10 6H4v7h5c0 3-2 5-5 5M21 6h-6v7h5c0 3-2 5-5 5"/>',
     "clock": '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
     "check": '<path d="m5 12 4 4L19 6"/>',
+    "target": '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+    "chart": '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+    "bolt": '<path d="M13 2 4 14h7l-1 8 9-12h-7Z"/>',
+    "circle": '<circle cx="12" cy="12" r="8"/>',
+    "lock": '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+    "upload": '<path d="M12 16V4m-5 5 5-5 5 5M4 20h16"/>',
 }
 
 
 def icon(name: str, size: int = 20) -> str:
     # st.html restringe SVG inline. A máscara local usa apenas formas estáticas
     # conhecidas e herda a cor, sem buscar arquivos ou fontes na rede.
-    svg = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">{_PATHS[name]}</svg>'
+    svg = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">{_PATHS[name]}</svg>'
     data = b64encode(svg.encode("utf-8")).decode("ascii")
     return f'<span class="ui-icon" style="width:{size}px;height:{size}px;mask-image:url(data:image/svg+xml;base64,{data});-webkit-mask-image:url(data:image/svg+xml;base64,{data})" aria-hidden="true"></span>'
 
@@ -41,24 +47,58 @@ def section_heading(number: str, title: str, subtitle: str = "") -> None:
 
 
 def brand() -> None:
-    html(f'<div class="brand"><span class="brand-mark">{icon("book", 25)}</span><div class="brand-name">Estuda<span>PDF</span><small>LEITURA COM CONTEXTO</small></div></div>')
+    html(f'<div class="brand"><span class="brand-mark">{icon("book", 22)}</span><div class="brand-name">Estuda<span>PDF</span><small>TUTOR DE REVISÃO COM IA</small></div></div>')
+
+
+def stat(icon_name: str, value: int, label: str) -> str:
+    """Indicador numérico com contagem animada (CSS); o valor final fica no atributo."""
+    number = int(value)
+    return (f'<div class="stat-card"><span class="stat-icon">{icon(icon_name, 18)}</span><div>'
+            f'<div class="stat-value" style="--n:{number}" aria-label="{number}"></div>'
+            f'<div class="stat-label">{safe(label)}</div></div></div>')
+
+
+def score_ring(score: int, total: int = 2, label: str = "Critérios atendidos") -> str:
+    percent = round(100 * score / max(total, 1))
+    tone = "good" if score == total else ("mid" if score else "low")
+    return (f'<div class="score-block {tone}"><div class="score-ring" style="--p:{percent}"><span>{int(score)}<small>/{int(total)}</small></span></div>'
+            f'<div><div class="score-label">{safe(label)}</div><div class="score-hint">'
+            f'{"Excelente! Todos os critérios foram atendidos." if tone == "good" else "Bom começo. Veja o que faltou abaixo." if tone == "mid" else "Vale revisar este ponto no material."}'
+            f'</div></div></div>')
+
+
+def criteria_list(criteria, met) -> str:
+    items = "".join(
+        f'<li class="{"met" if ok else "missed"}"><span class="crit-icon">{icon("check" if ok else "circle", 14)}</span>{safe(text)}</li>'
+        for text, ok in zip(criteria, met))
+    return f'<ul class="criteria-list">{items}</ul>'
 
 
 def hero() -> None:
     html(f'''<section class="hero" aria-labelledby="hero-title">
-      <div class="hero-copy"><div class="eyebrow"><span></span> SEU ESPAÇO DE ESTUDO</div>
-      <h1 id="hero-title">Menos procura.<br>Mais <em>entendimento.</em></h1>
-      <p>Converse com seu material e encontre explicações<br class="desktop-break"> acompanhadas das fontes que você pode conferir.</p>
-      <div class="hero-footnote">{icon("file",16)} Seu documento <span>+</span> {icon("spark",16)} Inteligência artificial</div></div>
-      <div class="hero-visual" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
-        <div class="paper paper-back"></div><div class="paper paper-front"><span class="paper-file">{icon("file",21)} MATERIAL DE ESTUDO</span>
-        <div class="paper-line long"></div><div class="paper-line"></div><div class="paper-highlight"></div><div class="paper-line medium"></div><div class="paper-line short"></div>
-        <div class="paper-source">{icon("quote",14)} Uma fonte para cada descoberta</div></div>
-        <div class="insight-stamp">{icon("spark",23)}</div><div class="source-sticker">{icon("check",14)} Baseado no seu material</div>
+      <div class="hero-bg" aria-hidden="true"><span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span><span class="hero-grid"></span></div>
+      <div class="hero-copy"><div class="eyebrow"><span class="pulse"></span> TUTOR DE REVISÃO COM IA</div>
+      <h1 id="hero-title">Ler é o começo.<br>Pratique para <em>aprender.</em></h1>
+      <p>Responda a perguntas do seu material, receba feedback com critérios claros<br class="desktop-break"> e descubra exatamente o que precisa revisar.</p>
+      <div class="hero-chips"><span>{icon("target",15)} Perguntas do seu PDF</span><span>{icon("check",15)} Feedback com critérios</span><span>{icon("quote",15)} Fontes verificáveis</span></div></div>
+      <div class="hero-visual" aria-hidden="true">
+        <div class="float-card card-question"><div class="fc-label">{icon("spark",13)} PERGUNTA 2 DE 3</div>
+          <div class="fc-line w90"></div><div class="fc-line w70"></div>
+          <div class="fc-input"><span class="fc-typing"></span><span class="fc-caret"></span></div></div>
+        <div class="float-card card-score"><div class="mini-ring"><span>2/2</span></div><div><strong>Critérios</strong><small>atendidos</small></div></div>
+        <div class="float-card card-source">{icon("check",13)} Fonte conferida · <b>P4-T2</b></div>
+        <div class="float-card card-plan"><div class="fc-label">{icon("chart",13)} PLANO DE REVISÃO</div>
+          <div class="bar-row"><span>RAG</span><i style="--w:92%"></i></div>
+          <div class="bar-row"><span>TF-IDF</span><i style="--w:58%" class="warn"></i></div>
+          <div class="bar-row"><span>Embeddings</span><i style="--w:34%" class="low"></i></div></div>
       </div></section>''')
 
 
 def empty_evidence() -> None:
-    html(f'''<div class="empty-evidence"><div class="evidence-illustration"><div class="evidence-paper">{icon("file",47)}<span></span><span></span></div><span class="evidence-search">{icon("search",23)}</span></div>
+    html(f'''<div class="empty-evidence"><div class="evidence-illustration"><div class="evidence-paper">{icon("file",40)}<span></span><span></span></div><span class="evidence-search">{icon("search",21)}</span></div>
     <h3>Uma boa resposta começa<br>com uma fonte.</h3><p>Faça sua primeira pergunta.<br>Os trechos encontrados no material<br>vão aparecer aqui para conferência.</p>
     <div class="empty-source-tag">{icon("shield",14)} Evidências sempre à vista</div></div>''')
+
+
+def empty_state(icon_name: str, title: str, text: str) -> None:
+    html(f'<div class="empty-state"><span class="empty-icon">{icon(icon_name, 24)}</span><div><strong>{safe(title)}</strong><p>{safe(text)}</p></div></div>')

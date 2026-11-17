@@ -10,7 +10,7 @@ class ServerConfigAppTests(unittest.TestCase):
             app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"), default_timeout=25).run()
             self.assertFalse(app.exception)
             self.assertEqual(len(app.radio), 0)
-            self.assertEqual(len(app.text_input), 0)
+            self.assertEqual([item.label for item in app.text_input], ["Qual assunto você quer praticar?"])
             self.assertFalse(any(item.label == "Configuração da IA" for item in app.expander))
             self.assertFalse(any(button.label == "Consultar modelos disponíveis" for button in app.button))
 

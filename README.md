@@ -1,6 +1,11 @@
 # EstudaPDF
 
-A interface oferece diretamente perguntas e resumo do material. Provedor,
+**Tutor de revisão baseado no material da disciplina.** O aluno escolhe um
+assunto, responde a três perguntas abertas e recebe feedback com dois critérios
+por resposta, gabarito e evidências. Um painel organiza prioridades de revisão
+com base nas respostas desta sessão. Consulte [o fluxo e a avaliação](docs/TUTOR_REVISAO.md).
+
+A interface oferece revisão ativa, perguntas e resumo do material. Provedor,
 chave e modelo são gerenciados no servidor. `LLM_MODEL` fixa o modelo usado;
 quando estiver vazio, o servidor seleciona automaticamente um modelo de texto
 disponível, dando preferência à família Flash. As confirmações de envio de
@@ -8,7 +13,7 @@ conteúdo ao Gemini continuam disponíveis antes das operações.
 
 A geração de respostas e resumos usa exclusivamente a API Gemini. Configure
 `GEMINI_API_KEY` no `.env` privado e escolha um modelo disponível na conta.
-O modo Somente busca permite consultar trechos sem geração. Os pilotos Ollama
+Os pilotos Ollama
 registrados nos materiais são históricos, anteriores à remoção desse suporte.
 
 Assistente de estudos com **RAG (geração aumentada por recuperação)** sobre um
@@ -36,15 +41,15 @@ Também existe `iniciar.ps1`, se a política de scripts do computador permitir.
 Não é necessário alterar a política de execução do Windows.
 
 1. Comece com o material de demonstração ou carregue um PDF textual.
-2. Em **Somente busca**, faça uma pergunta e confira os trechos: não usa chave
-   e **não gera resposta por IA**.
-3. Para gerar, escolha **Resposta com IA** e configure um provedor.
-4. Faça uma pergunta, confira as referências e baixe o registro se desejar.
+2. Em **Revisão ativa**, informe um assunto presente no material.
+3. Leia e marque a autorização de envio ao Gemini, depois prepare a rodada.
+4. Responda às perguntas, confira o feedback e as fontes e consulte o plano de revisão.
+5. Use **Consultar material** para tirar dúvidas e baixe o histórico se desejar.
 
 ### Resumir seu material
 
 Abra a aba **Resumir material**, escolha todo o intervalo disponível ou selecione
-as páginas/seções desejadas. Ative **Resposta com IA** na barra lateral,
+as páginas/seções desejadas. Autorize o envio do intervalo ao Gemini,
 confira o volume e o limite de chamadas mostrados e clique em **Gerar resumo
 do material**. O resultado pode ser baixado como texto ou registro JSON.
 
@@ -159,7 +164,9 @@ As chamadas usam o endpoint REST `generateContent`. O prompt está em
 ## Arquitetura e técnica de IA
 
 A interface foi redesenhada em 17/11/2026, com workspace de consulta, painel
-de evidências e configuração de IA recolhida na barra lateral. O ponto de
+de evidências, envio de PDF no centro da página e, na barra lateral, a lista
+de materiais estudados na sessão com o progresso de revisão de cada um
+(somente em memória, sem gravação em disco). O ponto de
 entrada é `app.py`; a implementação visual está em `frontend.py`, `ui.py`
 e `assets/styles.css`. Não há dependência de fontes ou imagens externas.
 

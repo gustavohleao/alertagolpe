@@ -14,7 +14,9 @@ from .retrieval import DocumentIndex
 from .service import run_query
 from .settings import load_settings
 from .summary import SummaryError, prepare_summary, summarize
-from .ui import brand, empty_evidence, hero, html, icon, safe, section_heading
+from .tutor import progress_rows
+from .tutor_ui import render_tutor
+from .ui import brand, empty_evidence, hero, html, icon, safe, section_heading, stat
 
 
 def _env_timeout(settings: dict[str, str]) -> int:
@@ -28,32 +30,87 @@ def _set_example(question: str) -> None:
     st.session_state["question_input"] = question
 
 
-def _sidebar(settings: dict[str, str]):
+DEMO_KEY = "demo-v1"
+MAX_LIBRARY = 6
+
+
+def _config(settings: dict[str, str]) -> ProviderConfig:
+    return ProviderConfig("gemini", settings["LLM_MODEL"].strip(), settings["GEMINI_API_KEY"].strip(), timeout=_env_timeout(settings))
+
+
+def _library() -> dict:
+    """Materiais desta sessão, do mais antigo ao mais recente. Nada é gravado em disco."""
+    return st.session_state.setdefault("library", {})
+
+
+def _entry_id(key: str) -> str:
+    return sha256(key.encode("utf-8")).hexdigest()[:12]
+
+
+def _open_material(key: str) -> None:
+    library = _library()
+    if key in library:
+        library[key] = library.pop(key)  # move para o topo dos recentes
+        st.session_state["active_material"] = key
+
+
+def _remove_material(key: str) -> None:
+    _library().pop(key, None)
+    if key == DEMO_KEY:
+        st.session_state["use_demo"] = False
+    if st.session_state.get("active_material") == key:
+        st.session_state.pop("active_material", None)
+
+
+def _toggle_demo() -> None:
+    if st.session_state.get("use_demo"):
+        st.session_state["active_material"] = DEMO_KEY
+    else:
+        _remove_material(DEMO_KEY)
+
+
+def _progress(history) -> tuple[int, int, int]:
+    rows = progress_rows(history)
+    answers = sum(row["Respostas avaliadas"] for row in rows)
+    percent = round(sum(row["Critérios atendidos (%)"] * row["Respostas avaliadas"] for row in rows) / answers) if answers else 0
+    return len(rows), answers, percent
+
+
+def _sidebar(config: ProviderConfig) -> None:
+    library, active = _library(), st.session_state.get("active_material")
     with st.sidebar:
         brand()
-        html(f'<div class="sidebar-workspace">{icon("book",17)} Sala de estudo <span class="active-dot"></span></div>')
-        html('<div class="sidebar-label">01 / SEU MATERIAL</div>')
-        uploaded = st.file_uploader("Carregar um PDF", type=["pdf"], key=f"uploaded_pdf_{st.session_state.get('upload_nonce', 0)}", help="PDF com texto selecionável, até 15 MB e 150 páginas. Processamento em memória.")
-        use_demo = st.checkbox("Usar material de demonstração", value=True, disabled=uploaded is not None)
-        if uploaded is None and use_demo:
-            st.caption("Explore com nosso guia educativo de IA. As fontes são seções de exemplo, não páginas de PDF.")
-        elif uploaded is not None:
-            st.caption("Seu PDF substitui o exemplo. Use um material que você tem autorização para processar.")
-        mode = "Resposta com IA"
-        api_key = settings["GEMINI_API_KEY"].strip()
-        model_name = settings["LLM_MODEL"].strip()
-        authorized = st.checkbox("Autorizo enviar minha pergunta e os trechos recuperados à API Gemini.", value=False)
-        if not api_key:
+        html(f'<div class="sidebar-label">{icon("book",12)} MATERIAIS ESTUDADOS <span class="label-count">{len(library)}</span></div>')
+        if not library:
+            html(f'<div class="library-empty">{icon("file",20)}<p>Nenhum material ainda. Carregue um PDF no centro da página para começar.</p></div>')
+        for key in reversed(list(library)):
+            entry, current = library[key], key == active
+            topics, answers, percent = _progress(entry["history"])
+            unit = "seções" if entry["is_demo"] else "páginas"
+            progress_line = (f'{answers} {"resposta" if answers == 1 else "respostas"} · {topics} {"assunto" if topics == 1 else "assuntos"}'
+                             if answers else "Ainda sem revisão")
+            now = '<span class="lib-now">ATIVO</span>' if current else ""
+            # O nome do arquivo só entra em HTML escapado, nunca em rótulo de botão (que aceita Markdown).
+            with st.container(key=f"{'libactive' if current else 'lib'}_{_entry_id(key)}"):
+                html(f'<div class="lib-item"><div class="lib-top"><span class="lib-icon">{icon("spark" if entry["is_demo"] else "file",16)}</span>'
+                     f'<div class="lib-copy"><div class="lib-name">{safe(entry["name"])}</div><div class="lib-meta">{len(entry["pages"])} {unit} · {safe(entry["kind"])}</div></div>{now}</div>'
+                     f'<div class="lib-progress"><div class="lib-track"><i style="--w:{percent}%"></i></div><b>{percent}%</b></div>'
+                     f'<div class="lib-foot">{safe(progress_line)}</div></div>')
+                open_col, remove_col = st.columns([3, 1])
+                if not current:
+                    open_col.button("Abrir", key=f"open_{_entry_id(key)}", on_click=_open_material, args=(key,), use_container_width=True, icon=":material/play_arrow:")
+                remove_col.button(":material/close:", key=f"remove_{_entry_id(key)}", on_click=_remove_material, args=(key,), help="Remover da lista desta sessão", use_container_width=True)
+        st.caption("A lista vale só para esta sessão. Os materiais ficam em memória e não são gravados em disco.")
+        if not config.api_key:
             st.warning("O serviço de IA está aguardando configuração pelo responsável do aplicativo.")
-        st.divider()
-        html(f'<div class="sidebar-tip"><div class="tip-title">{icon("spark",16)} Uma pergunta de cada vez</div><p>Comece por um conceito específico. Use as palavras do material para encontrar boas evidências.</p></div>')
-        if st.button("Limpar sessão", use_container_width=True):
+        else:
+            html(f'<div class="ai-status online"><span class="status-dot"></span><div><strong>IA conectada</strong><small>{safe(config.model or "Modelo automático · Gemini")}</small></div></div>')
+        if st.button("Limpar sessão", use_container_width=True, key="clear_session", icon=":material/restart_alt:"):
             next_nonce = st.session_state.get("upload_nonce", 0) + 1
             st.session_state.clear()
             st.session_state["upload_nonce"] = next_nonce
             st.rerun()
         html('<div class="sidebar-footer">ESTUDAPDF / PROJETO ACADÊMICO<br>IA Generativa · 2026</div>')
-    return uploaded, use_demo, mode, ProviderConfig("gemini", model_name, api_key, timeout=_env_timeout(settings)), authorized
 
 
 def _ready_config(config: ProviderConfig) -> ProviderConfig:
@@ -77,42 +134,88 @@ def _ready_config(config: ProviderConfig) -> ProviderConfig:
     return config
 
 
-def _load_material(uploaded, use_demo):
+def _index_material(pages):
+    chunks = split_pages(pages)
+    return {"pages": pages, "chunks": chunks, "index": DocumentIndex(chunks), "history": []}
+
+
+def _add_material(key: str, entry: dict) -> None:
+    library = _library()
+    library[key] = entry
+    st.session_state["active_material"] = key
+    while len(library) > MAX_LIBRARY:
+        library.pop(next(k for k in library if k != key))
+        st.toast("O material mais antigo saiu da lista para liberar memória.", icon=":material/info:")
+
+
+def _upload_panel():
+    has_library = bool(_library())
+    with st.container(key="upload_panel"):
+        copy_col, drop_col = st.columns([1, 1.35], gap="large", vertical_alignment="center")
+        with copy_col:
+            section_heading("+", "Adicionar outro material" if has_library else "Comece pelo seu material",
+                            "Envie um PDF da disciplina. Ele aparece na barra lateral junto com seu progresso.")
+            st.session_state.setdefault("use_demo", True)
+            st.checkbox("Usar material de demonstração", key="use_demo", on_change=_toggle_demo)
+            st.caption("PDF com texto selecionável, até 15 MB e 150 páginas. Use um material que você tem autorização para processar.")
+        with drop_col:
+            uploaded = st.file_uploader("Carregar um PDF", type=["pdf"], key=f"uploaded_pdf_{st.session_state.get('upload_nonce', 0)}",
+                                        label_visibility="collapsed", help="Processamento em memória, sem gravação em disco.")
+    return uploaded
+
+
+def _load_material(uploaded):
+    library = _library()
     if uploaded is not None:
         data = uploaded.getvalue()
         key = f"pdf:{sha256(data).hexdigest()}:{uploaded.name}"
-        name, kind = uploaded.name, "Seu documento"
-    elif use_demo:
-        data, key = None, "demo-v1"
-        name, kind = DEMO_NAME, "Material de demonstração"
-    else:
-        st.info("Carregue um PDF ou ative o material de demonstração para começar.")
-        st.stop()
-    if st.session_state.get("document_key") != key:
+        if key in library:
+            _open_material(key)
+        elif st.session_state.get("failed_upload", ("",))[0] != key:
+            try:
+                with st.spinner("Organizando seu material para consulta…"):
+                    entry = _index_material(extract_pdf(data))
+            except (DocumentError, ValueError) as exc:
+                st.session_state["failed_upload"] = (key, str(exc))
+            else:
+                _add_material(key, {**entry, "name": uploaded.name, "kind": "Seu documento", "is_demo": False})
+        failed = st.session_state.get("failed_upload")
+        if failed and failed[0] == key:
+            st.error(failed[1])
+        else:
+            # Esvazia a área de envio para o próximo arquivo; o material já está na biblioteca.
+            st.session_state["upload_nonce"] = st.session_state.get("upload_nonce", 0) + 1
+            st.rerun()
+    if st.session_state.get("use_demo") and DEMO_KEY not in library:
+        library[DEMO_KEY] = {**_index_material(demo_pages()), "name": DEMO_NAME, "kind": "Material de demonstração", "is_demo": True}
+        st.session_state.setdefault("active_material", DEMO_KEY)
+    active = st.session_state.get("active_material")
+    if active not in library:
+        active = next(reversed(library), None)
+        st.session_state["active_material"] = active
+    if active is None:
+        return None
+    entry = library[active]
+    if st.session_state.get("document_key") != active:
+        for state_key in list(st.session_state):
+            if state_key.startswith("tutor_"):
+                del st.session_state[state_key]
         st.session_state.pop("result", None)
         st.session_state.pop("summary_result", None)
         st.session_state.pop("summary_scope", None)
-        try:
-            with st.spinner("Organizando seu material para consulta…"):
-                pages = extract_pdf(data) if data is not None else demo_pages()
-                chunks = split_pages(pages)
-                index = DocumentIndex(chunks)
-        except (DocumentError, ValueError) as exc:
-            st.error(str(exc))
-            st.stop()
-        st.session_state.update(document_key=key, pages=pages, chunks=chunks, index=index)
-    return data, name, kind
+        # A lista do histórico é a mesma da biblioteca: o progresso fica guardado por material.
+        st.session_state.update(document_key=active, pages=entry["pages"], chunks=entry["chunks"], index=entry["index"], tutor_history=entry["history"])
+    return entry
 
 
-def _material_bar(data, source_name: str, source_type: str):
-    pages, chunks = st.session_state["pages"], st.session_state["chunks"]
-    with st.container(key="context_bar"):
-        doc_col, page_col, chunk_col = st.columns([3.8, 1, 1.1], vertical_alignment="center")
-        with doc_col:
-            meta = "Texto educativo dividido em seções" if data is None else "Texto extraído por página · disponível para consulta"
-            html(f'<div class="document-info"><div class="document-icon">{icon("file",23)}</div><div class="document-copy"><div class="doc-label">{safe(source_type)}</div><div class="doc-name">{safe(source_name)}</div><div class="doc-meta">{safe(meta)}</div></div></div>')
-        page_col.metric("Seções" if data is None else "Páginas com texto", len(pages))
-        chunk_col.metric("Trechos indexados", len(chunks))
+def _material_bar(entry):
+    pages, chunks, demo = entry["pages"], entry["chunks"], entry["is_demo"]
+    meta = "Texto educativo dividido em seções" if demo else "Texto extraído por página · pronto para consulta"
+    html(f'<div class="material-bar"><div class="document-info"><div class="document-icon">{icon("file",22)}</div>'
+         f'<div class="document-copy"><div class="doc-label"><span class="ready-dot"></span>Estudando agora · {safe(entry["kind"])}</div>'
+         f'<div class="doc-name">{safe(entry["name"])}</div><div class="doc-meta">{safe(meta)}</div></div></div>'
+         f'<div class="stat-group">{stat("book", len(pages), "Seções" if demo else "Páginas com texto")}'
+         f'{stat("layers", len(chunks), "Trechos indexados")}</div></div>')
 
 
 def _answer(result, source_name):
@@ -151,6 +254,7 @@ def _evidence(result):
         st.caption("Confira se os trechos sustentam a resposta. Similaridade indica correspondência lexical, não confiança.")
         for position, hit in enumerate(result.hits):
             with st.expander(f"{hit.chunk.location_label} {hit.chunk.page} · [{hit.chunk.id}]", expanded=position == 0):
+                html(f'<div class="sim-meter"><span>Similaridade</span><div class="sim-track"><i style="--w:{max(4, min(100, round(hit.score * 100)))}%"></i></div><b>{hit.score:.2f}</b></div>')
                 st.text(hit.chunk.text)
                 st.caption(f"Similaridade lexical: {hit.score:.3f} · consulte o contexto original.")
 
@@ -158,8 +262,8 @@ def _evidence(result):
 def _about():
     with st.container(key="about_card"):
         section_heading("01", "Do material à explicação", "O caminho percorrido por cada consulta.")
-        stages = ["Seu PDF", "Trechos", "Busca", "Contexto", "Resposta"]
-        html('<div class="about-flow">' + icon("arrow",15).join(f'<span>{safe(stage)}</span>' for stage in stages) + '</div>')
+        stages = [("file", "Seu PDF", "Texto extraído"), ("layers", "Trechos", "Divisão do texto"), ("search", "Busca", "TF-IDF + cosseno"), ("quote", "Contexto", "Até 3 passagens"), ("spark", "Resposta", "Gemini com citações")]
+        html('<div class="about-flow">' + "".join(f'<div class="flow-step" style="--i:{n}"><span class="flow-icon">{icon(ic,18)}</span><strong>{safe(t)}</strong><small>{safe(d)}</small></div>' for n, (ic, t, d) in enumerate(stages)) + '</div>')
         st.write("O texto é extraído por página e dividido em trechos. TF-IDF representa as palavras e pares de palavras; a similaridade do cosseno seleciona até três passagens para o contexto. Quando a resposta com IA está ativada, o modelo recebe esses trechos e a pergunta, com instruções para reconhecer lacunas e citar evidências.")
         st.info("A recuperação é lexical, sem embeddings semânticos. Não há treinamento de classificador nem alteração dos pesos do modelo de linguagem.")
         st.markdown("### Uma visão geral do material")
@@ -272,12 +376,21 @@ def render_app(root: Path) -> None:
     settings = load_settings(root)
     st.set_page_config(page_title="EstudaPDF · Seu espaço de estudo", page_icon="📖", layout="wide", initial_sidebar_state="auto")
     st.html(f'<style>{(root / "assets" / "styles.css").read_text(encoding="utf-8")}</style>')
-    uploaded, use_demo, mode, config, authorized = _sidebar(settings)
-    html(f'<div class="workspace-topbar"><div class="breadcrumb">{icon("book",16)} Workspace <span class="slash">/</span><strong>Sala de estudo</strong></div><div class="workspace-label">{icon("shield",14)} Respostas com evidências</div></div>')
+    config, mode = _config(settings), "Resposta com IA"
+    status = '<span class="top-pill online"><span class="status-dot"></span>Gemini online</span>' if config.api_key else '<span class="top-pill offline"><span class="status-dot"></span>IA aguardando configuração</span>'
+    html(f'<div class="workspace-topbar"><div class="breadcrumb">{icon("book",16)} Workspace <span class="slash">/</span><strong>Sala de estudo</strong></div><div class="topbar-right"><span class="workspace-label">{icon("shield",14)} Respostas com evidências</span>{status}</div></div>')
     hero()
-    data, source_name, source_type = _load_material(uploaded, use_demo)
-    _material_bar(data, source_name, source_type)
-    study_tab, summary_tab, about_tab = st.tabs(["Sala de estudo", "Resumir material", "Como funciona"])
+    uploaded = _upload_panel()
+    entry = _load_material(uploaded)
+    _sidebar(config)
+    if entry is None:
+        st.info("Carregue um PDF ou ative o material de demonstração para começar.")
+        st.stop()
+    source_name = entry["name"]
+    _material_bar(entry)
+    tutor_tab, study_tab, summary_tab, about_tab = st.tabs([":material/school: Revisão ativa", ":material/manage_search: Consultar material", ":material/summarize: Resumir material", ":material/info: Como funciona"])
+    with tutor_tab:
+        render_tutor(config, _ready_config, source_name)
     with study_tab:
         workspace, evidence = st.columns([1.65, 1], gap="large")
         with workspace:
@@ -290,7 +403,8 @@ def render_app(root: Path) -> None:
                         st.caption("Cada pergunta é uma nova consulta.")
                     with action_col:
                         submitted = st.form_submit_button("Buscar e responder" if mode == "Resposta com IA" else "Encontrar trechos", type="primary", use_container_width=True)
-                if data is None:
+                authorized = st.checkbox("Autorizo enviar minha pergunta e os trechos recuperados à API Gemini.", value=False, key="query_consent")
+                if entry["is_demo"]:
                     st.caption("PARA COMEÇAR")
                     with st.container(key="question_examples"):
                         examples = [
@@ -311,7 +425,7 @@ def render_app(root: Path) -> None:
                         st.error(str(exc))
                         can_run = False
                     if not authorized:
-                        st.warning("Autorize o envio dos trechos na barra lateral antes de gerar com Gemini.")
+                        st.warning("Autorize o envio dos trechos abaixo da pergunta antes de gerar com Gemini.")
                         can_run = False
                 if can_run:
                     try:
