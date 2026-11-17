@@ -10,7 +10,7 @@ educacional ainda precisa ser avaliada; não há evidência de ganho de aprendiz
 ## Fluxo funcional
 
 1. Carregar PDF textual ou usar o material de demonstração.
-2. Informar um assunto com termos presentes no texto e autorizar o envio.
+2. Informar um assunto com termos presentes no texto e preparar a rodada.
 3. TF-IDF e cosseno recuperam até três trechos; sem evidências não há chamada.
 4. Gemini prepara três perguntas, respostas esperadas e dois critérios por pergunta.
 5. O estudante responde antes de a interface revelar o gabarito.
@@ -20,8 +20,11 @@ educacional ainda precisa ser avaliada; não há evidência de ganho de aprendiz
    atendidos. Nova rodada no mesmo assunto inclui até 12 perguntas respondidas
    anteriormente no prompt, solicitando outras abordagens, sem garantir novidade.
 
-Uma rodada usa uma chamada para geração e até três para correção. Não há
-repetição automática. Falha da API não produz uma resposta simulada.
+Uma rodada usa uma chamada para geração e até três para correção. Desde
+17/11/2026, erros temporários do provedor (HTTP 500, 502, 503 e 504) são
+repetidos automaticamente até três vezes, com espera crescente, e uma
+requisição que excede o tempo limite é repetida uma vez; erros de chave,
+cota (429) e parâmetros não são repetidos. Falha da API não produz uma resposta simulada.
 O histórico e as evidências ficam na sessão e podem ser exportados em JSON.
 Trocar o documento ou limpar a sessão remove o acompanhamento anterior.
 
@@ -36,8 +39,8 @@ também pode falhar. O painel é formativo, não uma nota oficial nem diagnósti
 Rodadas podem ter dificuldades diferentes; percentuais não demonstram evolução
 de aprendizagem. O histórico não persiste entre sessões e não há contas.
 
-Gemini recebe o assunto, até três trechos e as respostas, mediante autorização
-específica. O download pode conter dados pessoais e texto do material.
+Gemini recebe o assunto, até três trechos e as respostas quando o usuário
+prepara a rodada ou envia uma resposta, sem confirmação adicional. O download pode conter dados pessoais e texto do material.
 Código, interface, testes e este documento foram produzidos com assistência de
 IA e precisam de revisão do grupo. Os prompts executáveis estão em
 `src/estudapdf/tutor.py` (tutor-v1).
@@ -52,7 +55,7 @@ entre a avaliação humana e a IA, além de tempo, falhas e chamadas utilizadas.
 Testar assunto ausente e confirmar que não é gerada uma rodada sem evidências.
 
 Os testes automatizados usam respostas simuladas do provedor para verificar
-contratos, consentimento, referências e cálculo dos indicadores. Não comprovam
+contratos, referências e cálculo dos indicadores. Não comprovam
 qualidade pedagógica nem disponibilidade real da API. A validação real do novo
 fluxo e a avaliação com estudantes continuam pendentes.
 

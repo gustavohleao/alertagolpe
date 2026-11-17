@@ -22,15 +22,12 @@ def render_tutor(config, ready_config, source_name):
     with st.container(key="tutor_setup"):
         section_heading("01", "Descubra o que precisa revisar", "Escolha um assunto, responda sem consultar o gabarito e confira as evidências depois.")
         topic = st.text_input("Qual assunto você quer praticar?", max_chars=200, placeholder="Ex.: RAG, aprendizado supervisionado ou TF-IDF", key="tutor_topic")
-        consent = st.checkbox("Autorizo enviar o assunto, os trechos recuperados e minhas respostas à API Gemini para esta revisão.", key=f"tutor_consent_{st.session_state['document_key']}")
         st.caption("A rodada usa até três trechos encontrados por assunto, sem prometer cobertura de todo o PDF. Até quatro chamadas de IA: uma para preparar e uma por resposta.")
         if st.button("Preparar rodada de revisão", type="primary", use_container_width=True, icon=":material/bolt:"):
             try:
-                if not consent:
-                    raise TutorError("Autorize o envio dos dados para preparar a revisão.")
                 with st.spinner("Preparando perguntas e critérios com base no material…"):
                     previous = [h["exercise"]["question"] for h in history if h["topic"] == topic.strip()]
-                    new_round = create_round(topic, st.session_state["index"], ready_config(config), authorized=consent, previous=previous)
+                    new_round = create_round(topic, st.session_state["index"], ready_config(config), authorized=True, previous=previous)
                 st.session_state["tutor_round"] = new_round
                 st.session_state["tutor_answers"] = {}
                 st.session_state["tutor_round_nonce"] = st.session_state.get("tutor_round_nonce", 0) + 1
@@ -56,10 +53,8 @@ def render_tutor(config, ready_config, source_name):
                         submitted = st.form_submit_button("Avaliar minha resposta", type="primary", icon=":material/task_alt:")
                     if submitted:
                         try:
-                            if not consent:
-                                raise TutorError("Autorize o envio da resposta para receber a avaliação.")
                             with st.spinner("Conferindo a resposta com os critérios e as fontes…"):
-                                result = evaluate(exercise, answer, active.hits, ready_config(config), authorized=consent)
+                                result = evaluate(exercise, answer, active.hits, ready_config(config), authorized=True)
                             record = {"topic": active.topic, "exercise": asdict(exercise), "answer": answer.strip(), "evaluation": result,
                                       "evidence": [asdict(h.chunk) for h in active.hits if h.chunk.id in exercise.sources]}
                             answers[i] = record

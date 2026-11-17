@@ -34,11 +34,18 @@ class Round:
 
 
 def _json(text):
+    if not isinstance(text, str):
+        raise TutorError("A IA retornou uma estrutura inválida. Tente novamente; nenhum resultado foi registrado.")
     text = text.strip()
     if text.startswith("```") and text.endswith("```"):
         text = text.split("\n", 1)[1].rsplit("```", 1)[0]
+    # Considera só o objeto JSON (ignora texto antes/depois) e aceita quebras de
+    # linha dentro das strings, que alguns modelos inserem ao "quebrar" o texto.
+    start, end = text.find("{"), text.rfind("}")
+    if start != -1 and end > start:
+        text = text[start:end + 1]
     try:
-        value = json.loads(text)
+        value = json.loads(text, strict=False)
     except (ValueError, TypeError):
         raise TutorError("A IA retornou uma estrutura inválida. Tente novamente; nenhum resultado foi registrado.") from None
     if not isinstance(value, dict):
@@ -53,6 +60,9 @@ def _text(value, limit=2400):
 
 
 def _sources(value, allowed):
+    if isinstance(value, list):
+        # "P1-\nT1" -> "P1-T1": o modelo às vezes quebra a linha dentro do ID.
+        value = ["".join(s.split()) if isinstance(s, str) else s for s in value]
     if not isinstance(value, list) or not value or any(not isinstance(s, str) or s not in allowed for s in value):
         raise TutorError("A IA não vinculou o resultado a fontes válidas. Resultado retido.")
     return tuple(dict.fromkeys(value))
@@ -75,7 +85,7 @@ Cada pergunta deve conter uma resposta esperada curta e exatamente dois critéri
 objetivos e independentes para avaliar a resposta. As fontes devem sustentar o gabarito.
 Formato: {"exercises":[{"question":"...","expected":"...","criteria":["...","..."],"sources":["P1-T1"]}]}.
 DADOS:\n""" + json.dumps(payload, ensure_ascii=False)
-    data = _json(generate(SYSTEM, prompt, config).text)
+    data = _json(generate(SYSTEM, prompt, config, json_output=True).text)
     items = data.get("exercises")
     if not isinstance(items, list) or len(items) != 3:
         raise TutorError("A IA não retornou as três perguntas esperadas.")
@@ -110,7 +120,7 @@ explique a falha. Não dê crédito a conteúdo contradito pelo material.
 Formato: {"assessable":true,"met":[true,false],"feedback":"acertos e lacunas concretos",
 "next_step":"o que revisar no material","sources":["P1-T1"]}.
 DADOS:\n""" + json.dumps({"exercise": asdict(exercise), "answer": answer, "evidence": evidence}, ensure_ascii=False)
-    result = _json(generate(SYSTEM, prompt, config).text)
+    result = _json(generate(SYSTEM, prompt, config, json_output=True).text)
     if type(result.get("assessable")) is not bool:
         raise TutorError("A avaliação não informou se a pergunta pode ser corrigida.")
     met = result.get("met")

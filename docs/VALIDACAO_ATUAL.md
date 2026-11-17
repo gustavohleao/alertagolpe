@@ -3,6 +3,11 @@
 Este registro descreve execuções feitas com assistência de Codex. Não equivale
 a revisão humana, validação de aprendizagem ou avaliação independente.
 
+> **Atualização em 17/11/2026:** a interface deixou de exibir as caixas de
+> autorização de envio ao Gemini (pergunta, revisão e resumo). O envio passa a
+> ocorrer quando o usuário aciona a ação. As menções a autorização abaixo
+> descrevem o estado anterior.
+
 ## Ambiente
 
 Python 3.12.10 portátil em `.tools/python/python.exe`. Streamlit 1.67.0,

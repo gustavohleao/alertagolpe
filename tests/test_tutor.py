@@ -45,6 +45,18 @@ class TutorTests(unittest.TestCase):
                 create_round("RAG", self.index, self.config, authorized=True)
 
     @patch("estudapdf.tutor.generate")
+    def test_line_breaks_inside_strings_and_surrounding_text_are_tolerated(self, gen):
+        # Falha real do Gemini: quebras de linha cruas dentro das strings e do ID.
+        raw = json.dumps({"exercises": self.items}, ensure_ascii=False)
+        raw = raw.replace("Recupera e gera.", "Recupera\ne gera.").replace('"P1-T1"', '"P1-\nT1"')
+        for payload in [raw, "Aqui está o JSON:\n" + raw + "\nFim."]:
+            gen.return_value = Generation(payload, "test", 0, {})
+            active = create_round("RAG", self.index, self.config, authorized=True)
+            self.assertEqual(active.exercises[0].sources, ("P1-T1",))
+            self.assertIn("Recupera", active.exercises[0].expected)
+        self.assertTrue(gen.call_args.kwargs["json_output"])
+
+    @patch("estudapdf.tutor.generate")
     def test_evaluation_requires_consent_and_valid_boolean_criteria(self, gen):
         gen.return_value = self.generation({"exercises": self.items})
         active = create_round("RAG", self.index, self.config, authorized=True)

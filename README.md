@@ -42,14 +42,14 @@ Não é necessário alterar a política de execução do Windows.
 
 1. Comece com o material de demonstração ou carregue um PDF textual.
 2. Em **Revisão ativa**, informe um assunto presente no material.
-3. Leia e marque a autorização de envio ao Gemini, depois prepare a rodada.
+3. Prepare a rodada; o assunto e os trechos recuperados são enviados ao Gemini.
 4. Responda às perguntas, confira o feedback e as fontes e consulte o plano de revisão.
 5. Use **Consultar material** para tirar dúvidas e baixe o histórico se desejar.
 
 ### Resumir seu material
 
 Abra a aba **Resumir material**, escolha todo o intervalo disponível ou selecione
-as páginas/seções desejadas. Autorize o envio do intervalo ao Gemini,
+as páginas/seções desejadas,
 confira o volume e o limite de chamadas mostrados e clique em **Gerar resumo
 do material**. O resultado pode ser baixado como texto ou registro JSON.
 
@@ -64,13 +64,19 @@ O painel mostra **Texto processado**, sem inventar citações ou afirmar apoio
 para cada conclusão. O aviso acompanha os downloads. Referências desconhecidas
 e notas intermediárias sem fontes continuam impedindo a conclusão.
 
-No Gemini, o resumo exige uma autorização própria para enviar **todo esse texto**.
-A autorização de trechos de perguntas não se aplica ao resumo. Ela é vinculada
-ao documento e intervalo escolhidos. No Ollama, o envio é ao serviço local.
+No Gemini, o resumo envia **todo esse texto** ao clicar em **Gerar resumo do
+material**, sem confirmação adicional. No Ollama, o envio é ao serviço local.
 
 Limites operacionais: até 60 mil caracteres e um plano com no máximo 20 chamadas
-de IA, apresentado antes de começar. Cada prompt completo tem até 6 mil bytes
-UTF-8 como orçamento conservador de contexto, não uma contagem exata de tokens.
+de IA, apresentado antes de começar. Cada bloco de leitura tem até 6 mil bytes
+UTF-8 por prompt e cada síntese até 16 mil, como orçamento conservador de
+contexto, não uma contagem exata de tokens.
+
+Desde 17/11/2026 o resultado tem duas camadas: uma **visão geral** (até cerca
+de 400 palavras) e um **resumo por partes**, com a nota de cada bloco (cerca de
+200 palavras, com páginas e referências). Antes, tudo era comprimido em cerca de
+250 palavras, independentemente do tamanho do material. As partes reaproveitam
+as chamadas já feitas; o número de chamadas não aumenta.
 Se exceder os limites, selecione menos páginas; o aplicativo não corta o fim
 silenciosamente. Documentos longos podem consumir mais tempo/cota. Se qualquer
 etapa falhar, um resumo parcial não é apresentado como concluído.
@@ -149,15 +155,20 @@ aplicativo, sem precisar reiniciar o servidor. Variáveis definidas explicitamen
 no ambiente do processo têm prioridade sobre o arquivo; nesse caso, editar o
 `.env` não substitui o valor dessas variáveis. A interface não revela a chave.
 
-Antes de enviar a pergunta, marque a autorização. O aplicativo envia **apenas
+Desde 17/11/2026 a interface não pede autorização por caixa de seleção: o envio
+ao Gemini ocorre quando o usuário aciona a consulta, a revisão ou o resumo.
+Na consulta, o aplicativo envia **apenas
 a pergunta, o prompt de sistema e até três trechos recuperados**, não o PDF
 inteiro. Os trechos ainda podem conter dados pessoais. A política de uso dos
 dados e os custos do serviço dependem do provedor e da conta. Não há promessa
-de gratuidade. Para resumir com Gemini, há uma autorização separada e específica
-para enviar todo o texto extraído do intervalo selecionado; a autorização da
-pergunta não substitui a do resumo.
+de gratuidade. Ao resumir com Gemini, todo o texto extraído do intervalo
+selecionado é enviado.
 
-As chamadas usam o endpoint REST `generateContent`. O prompt está em
+As chamadas usam o endpoint REST `generateContent`. Erros temporários do
+provedor (HTTP 500, 502, 503 e 504, como "high demand") são repetidos
+automaticamente até três vezes, com espera de 2, 5 e 10 segundos (ou o
+`Retry-After` informado, até 15 s); uma requisição que excede o tempo limite
+é repetida uma vez. Chave inválida, cota (429) e parâmetros não são repetidos. O prompt está em
 `src/estudapdf/prompts.py`; não há dependência de um framework de agentes.
 
 

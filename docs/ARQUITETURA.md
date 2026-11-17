@@ -13,7 +13,7 @@ flowchart TD
     H -->|Não| I[Informar limite da busca sem chamar IA]
     H -->|Sim| J{Tipo de consulta}
     J -->|Somente busca| K[Exibir trechos sem geração]
-    J -->|Resposta com IA| L[Validar configuração e autorização]
+    J -->|Resposta com IA| L[Validar configuração]
     L --> M[Prompt com pergunta e trechos]
     M --> N[Gemini API ou Ollama local]
     N --> O[Verificar conclusão e IDs das referências]
@@ -29,13 +29,13 @@ flowchart TD
 - `providers.py`: integração REST, autenticação, timeout, erros e respostas completas.
 - `service.py`: orquestração, modo de busca, referências e registro exportável.
 - `summary.py`: plano de leitura integral do texto selecionado, resumo por partes
-  e sínteses hierárquicas, com referências P-R, limites e consentimento próprio.
+  e sínteses hierárquicas, com referências P-R e limites.
 - `demo.py`: conteúdo educativo de demonstração, explicitamente identificado.
 - `app.py`: ponto de entrada do Streamlit.
 - `settings.py`: leitura privada do `.env` a cada reexecução, sem alterar o
   ambiente; variáveis explícitas do processo têm prioridade. A chave não tem
   campo de entrada ou exibição na interface e não é incluída no pacote.
-- `frontend.py`: workspace, entrada de dados, consentimento, perguntas e evidências.
+- `frontend.py`: workspace, envio de PDF, biblioteca de materiais da sessão, perguntas e evidências.
 - `ui.py` e `assets/styles.css`: componentes visuais locais, ícones e estilos
   responsivos. Dados externos são escapados; respostas e trechos permanecem
   em texto simples, sem interpretar conteúdo do modelo como HTML ou Markdown.
@@ -66,7 +66,7 @@ flowchart TD
     B --> C{Limites de texto, contexto e chamadas atendidos?}
     C -->|Não| D[Orientar intervalo menor, sem chamada]
     C -->|Sim| E[Mostrar volume e limite de chamadas]
-    E --> F[Validar modelo e autorização própria se Gemini]
+    E --> F[Validar modelo]
     F --> G[Resumir cada parte com IDs P-R originais]
     G --> H[Combinar notas em sínteses dentro do orçamento]
     H --> I[Exibir síntese, referências e metadados]
@@ -78,9 +78,12 @@ Este fluxo não faz busca top 3. Todos os segmentos selecionados são enviados
 ideias. A verificação de IDs valida identidade, não apoio semântico das afirmações.
 
 O preflight limita a 60 mil caracteres e até 20 chamadas, com teto conservador
-de `2 × número de blocos − 1`. Prompts completos têm orçamento de 6 mil bytes
-UTF-8. Notas intermediárias são limitadas a 1.800 bytes e a saída final a 4 mil;
-saídas maiores são rejeitadas sem truncamento. Não há retries automáticos.
+de `2 × número de blocos − 1`. Prompts de leitura (mapa) têm orçamento de 6 mil
+bytes UTF-8 e prompts de síntese, 16 mil. Notas de bloco e intermediárias são
+limitadas a 3 mil bytes e a visão geral a 6 mil; saídas maiores são rejeitadas
+sem truncamento. As notas de cada bloco são preservadas e exibidas como
+"resumo por partes" junto à visão geral. Erros temporários do provedor (5xx)
+são repetidos até três vezes e um tempo esgotado, uma vez.
 Falhas interrompem a operação sem apresentar parciais como resumo completo.
 
 Uma saída final sem IDs pode ser exibida com aviso explícito e sem atribuição
@@ -93,12 +96,12 @@ nunca cita pode continuar falhando em resumos com várias etapas.
 ## Fluxo de dados
 
 PDF e índice permanecem no estado da sessão, sem cache global. Nas perguntas, Gemini recebe
-prompt, pergunta e trechos somente após ação e autorização na interface.
+prompt, pergunta e trechos somente após ação do usuário na interface.
 Ollama recebe esses dados no serviço local. Exportar o registro JSON é uma
 ação explícita do usuário e pode revelar conteúdo documental; revisar antes
 de compartilhar. A chave não é incluída nesse registro.
 
 No resumo, Gemini recebe todo o texto extraído do intervalo selecionado em
-partes, após autorização específica vinculada ao documento e intervalo.
+partes, quando o usuário aciona o resumo, sem confirmação adicional.
 Ollama recebe o mesmo conteúdo no serviço local. Exportar o resumo ou registro
 é uma ação explícita, e os arquivos também podem conter conteúdo documental.

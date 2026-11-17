@@ -68,7 +68,8 @@ de 180, unigramas/bigramas, até três resultados e limiar de cosseno 0,05.
 **O limiar não é confiança calibrada.** Timeout local configurado em 180 s.
 
 Resumo: até 60 mil caracteres e 20 chamadas previstas, verificados
-antes de gerar; orçamento heurístico de 6 mil bytes UTF-8 por prompt. Excesso
+antes de gerar; orçamento heurístico de 6 mil bytes UTF-8 por bloco lido e 16 mil
+por síntese. O resultado traz visão geral e resumo por partes. Excesso
 exige intervalo menor, sem corte silencioso. Esse orçamento não equivale a tokens.
 
 ## Slide 5 — Demonstração
@@ -81,8 +82,8 @@ exige intervalo menor, sem corte silencioso. Esse orçamento não equivale a tok
 
 Mostrar a aba “Resumir material” ao lado
 de “Sala de estudo” e “Como funciona”: selecionar intervalo, conferir o plano,
-gerar e exportar TXT/JSON sem chave. Em Gemini, mostrar o consentimento específico
-para enviar todo o texto extraído do intervalo, diferente da autorização de pergunta.
+gerar e exportar TXT/JSON sem chave. Em Gemini, explicar que todo o texto extraído
+do intervalo é enviado ao clicar em gerar o resumo.
 Apresentar o aviso se faltarem IDs e conferir o texto: a conclusão técnica não
 significa correção do resumo. A demonstração registrada usa a demo, não PDF real.
 

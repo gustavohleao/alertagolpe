@@ -1,7 +1,9 @@
 """Integrações HTTP reais. Sem respostas simuladas como fallback."""
 
 from dataclasses import dataclass, field
+import random
 import re
+import time
 from time import perf_counter
 
 import httpx
@@ -55,9 +57,41 @@ class Generation:
     usage: dict
 
 
-def _request(client: httpx.Client, method: str, url: str, **kwargs) -> dict:
+# Sobrecarga momentânea do provedor (ex.: 503 "high demand") costuma passar em
+# segundos. Repetimos a mesma requisição poucas vezes; erros de chave, cota (429)
+# e parâmetros não são repetidos. Uma requisição travada até o tempo limite é
+# repetida uma única vez, sem espera adicional.
+TRANSIENT_STATUS = {500, 502, 503, 504}
+RETRY_DELAYS = (2.0, 5.0, 10.0)
+MAX_RETRY_AFTER = 15.0
+TIMEOUT_RETRIES = 1
+
+
+def _retry_delay(response: httpx.Response, attempt: int) -> float:
     try:
-        response = client.request(method, url, **kwargs)
+        hinted = float(response.headers.get("retry-after", ""))
+    except ValueError:
+        hinted = 0.0
+    base = RETRY_DELAYS[min(attempt, len(RETRY_DELAYS) - 1)]
+    return min(max(base, hinted), MAX_RETRY_AFTER) + random.uniform(0, 0.5)
+
+
+def _request(client: httpx.Client, method: str, url: str, *, sleep=None, **kwargs) -> dict:
+    try:
+        timeouts = 0
+        attempt = 0
+        while True:
+            try:
+                response = client.request(method, url, **kwargs)
+            except httpx.TimeoutException:
+                if timeouts >= TIMEOUT_RETRIES:
+                    raise
+                timeouts += 1
+                continue
+            if response.status_code not in TRANSIENT_STATUS or attempt == len(RETRY_DELAYS):
+                break
+            (sleep or time.sleep)(_retry_delay(response, attempt))
+            attempt += 1
         response.raise_for_status()
     except httpx.TimeoutException:
         raise ProviderError("O modelo excedeu o tempo de espera. Nenhuma resposta foi substituída.") from None
@@ -82,7 +116,7 @@ def _request(client: httpx.Client, method: str, url: str, **kwargs) -> dict:
     return data
 
 
-def generate(system: str, prompt: str, config: ProviderConfig, *, client: httpx.Client | None = None) -> Generation:
+def generate(system: str, prompt: str, config: ProviderConfig, *, client: httpx.Client | None = None, json_output: bool = False) -> Generation:
     config.validate()
     api_key = _normalize_api_key(config.api_key)
     started = perf_counter()
@@ -98,7 +132,9 @@ def generate(system: str, prompt: str, config: ProviderConfig, *, client: httpx.
             json={
                 "systemInstruction": {"parts": [{"text": system}]},
                 "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-                "generationConfig": {"temperature": 0.2, "maxOutputTokens": 4096},
+                # Modo JSON da API: evita quebras de linha soltas e texto fora do objeto.
+                "generationConfig": {"temperature": 0.2, "maxOutputTokens": 4096,
+                                     **({"responseMimeType": "application/json"} if json_output else {})},
             },
         )
         candidates = data.get("candidates")

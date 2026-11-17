@@ -85,12 +85,12 @@ curta de uma chamada e um material que exija mapas e sínteses em vários nívei
 
 Os testes automatizados usam respostas simuladas para verificar limites de
 texto/contexto/chamadas, cobertura de segmentos, redução hierárquica, IDs por
-ramificação, interrupção sem parcial completo, autorização Gemini própria e
+ramificação, interrupção sem parcial completo e
 exportação sem chave. Isso não mede a qualidade de um resumo de modelo real.
 
 Na interface, confirmar que Somente busca não gera resumos, que mudar intervalo
-invalida o resultado anterior e que a autorização de perguntas não autoriza
-enviar todo o texto para resumo. Registrar tempo e chamadas em execução real;
+invalida o resultado anterior e que o volume e o limite de chamadas aparecem
+antes do envio de todo o texto para resumo. Registrar tempo e chamadas em execução real;
 não atribuir resultados de uma demo textual a apostilas ou PDFs reais.
 
 Se o texto final vier sem referências, a interface deve informar isso e mostrar

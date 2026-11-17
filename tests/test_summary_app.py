@@ -37,7 +37,6 @@ class SummaryAppTests(unittest.TestCase):
         with patch.dict(os.environ, {"LLM_PROVIDER": "gemini", "LLM_MODEL": "modelo-teste", "GEMINI_API_KEY": "chave-ficticia"}), patch("estudapdf.frontend.summarize", return_value=result) as summarize:
             app = self.app()
 
-            next(box for box in app.checkbox if box.label.startswith("Autorizo enviar todo o texto")).check().run()
             self.summary_button(app).click().run()
             self.assertFalse(app.exception)
             self.assertTrue(any(item.value == result.text for item in app.text))
@@ -48,20 +47,11 @@ class SummaryAppTests(unittest.TestCase):
             self.assertFalse(any(item.value == result.text for item in app.text))
             summarize.assert_called_once()
 
-    def test_gemini_requires_its_own_summary_consent(self):
+    def test_summary_runs_without_consent_checkbox(self):
         with patch.dict(os.environ, {"LLM_PROVIDER": "gemini", "GEMINI_API_KEY": "chave-ficticia", "LLM_MODEL": "modelo-teste"}), patch("estudapdf.frontend.summarize", return_value=self.result()) as summarize:
             app = self.app()
 
-            self.summary_button(app).click().run()
-            self.assertFalse(app.exception)
-            self.assertTrue(any("Autorize o envio do texto selecionado" in item.value for item in app.error))
-            summarize.assert_not_called()
-            consent = next(box for box in app.checkbox if box.label.startswith("Autorizo enviar todo o texto"))
-            consent.check().run()
-            # A autorização de perguntas permanece desmarcada: são ações distintas.
-            query_consent = next(box for box in app.checkbox if box.label.startswith("Autorizo enviar minha pergunta"))
-            self.assertFalse(query_consent.value)
-            next(box for box in app.checkbox if box.label.startswith("Autorizo enviar todo o texto")).check().run()
+            self.assertFalse(any(box.label.startswith("Autorizo") for box in app.checkbox))
             self.summary_button(app).click().run()
             self.assertFalse(app.exception)
             summarize.assert_called_once()
@@ -72,10 +62,8 @@ class SummaryAppTests(unittest.TestCase):
         with patch.dict(os.environ, {"LLM_PROVIDER": "gemini", "LLM_MODEL": "modelo-teste", "GEMINI_API_KEY": "chave-ficticia"}), patch("estudapdf.frontend.summarize", side_effect=[result, SummaryError("Falha após uma chamada.")]):
             app = self.app()
 
-            next(box for box in app.checkbox if box.label.startswith("Autorizo enviar todo o texto")).check().run()
             self.summary_button(app).click().run()
             self.assertTrue(any(item.value == result.text for item in app.text))
-            next(box for box in app.checkbox if box.label.startswith("Autorizo enviar todo o texto")).check().run()
             self.summary_button(app).click().run()
             self.assertFalse(app.exception)
             self.assertTrue(any("Falha após uma chamada" in item.value for item in app.error))
@@ -88,7 +76,6 @@ class SummaryAppTests(unittest.TestCase):
         with patch.dict(os.environ, {"LLM_PROVIDER": "gemini", "LLM_MODEL": "modelo-teste", "GEMINI_API_KEY": "chave-ficticia"}), patch("estudapdf.frontend.summarize", return_value=result):
             app = self.app()
 
-            next(box for box in app.checkbox if box.label.startswith("Autorizo enviar todo o texto")).check().run()
             self.summary_button(app).click().run()
             self.assertFalse(app.exception)
             self.assertTrue(any(item.value == result.warning for item in app.warning))

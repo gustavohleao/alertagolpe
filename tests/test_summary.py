@@ -107,7 +107,7 @@ class SummaryTests(unittest.TestCase):
             data = json.loads(prompt)
             final = data["etapa"] in {"resumo_final", "sintese_final"}
             # Large but valid notes force multiple synthesis levels.
-            limit = 1350 if final else 1650
+            limit = 1350 if final else MAX_NOTE_BYTES - 150
             text = short.text + " " + "detalhe " * max(0, (limit - len(short.text.encode("utf-8"))) // 8)
             return Generation(text, config.model, 0.01, {})
 
@@ -165,8 +165,9 @@ class SummaryTests(unittest.TestCase):
 
         generate.side_effect = handler
         result = summarize(plan, self.config, allow_external=True)
-        self.assertEqual(result.citations, ())
-        self.assertIn("O modelo não indicou referências", result.warning)
+        # As partes mantêm suas referências; o aviso aponta a visão geral sem fontes.
+        self.assertEqual(set(result.citations), {chunk.id for chunk in plan.source_chunks})
+        self.assertIn("O modelo não indicou referências na visão geral", result.warning)
         self.assertEqual(result.calls_completed, len(plan.blocks) + 1)
 
     @patch("estudapdf.summary.generate")
@@ -184,7 +185,7 @@ class SummaryTests(unittest.TestCase):
         def handler(system, prompt, config):
             data = json.loads(prompt)
             if "fontes" in data:
-                text = f"Conceitos [{data['fontes'][0]['id']}]. " + "detalhe " * 195
+                text = f"Conceitos [{data['fontes'][0]['id']}]. " + "detalhe " * ((MAX_NOTE_BYTES - 150) // 8)
                 return Generation(text, config.model, 0.01, {})
             self.assertEqual(data["etapa"], "sintese_intermediaria")
             return Generation("Uma síntese intermediária sem referências.", config.model, 0.01, {})
@@ -197,8 +198,8 @@ class SummaryTests(unittest.TestCase):
     @patch("estudapdf.summary.generate")
     def test_utf8_output_limit_is_bytes_not_characters(self, generate):
         plan = prepare_summary([Page(1, "Conceitos do texto.")])
-        # Less than 4000 characters but more than 4000 bytes.
-        generate.return_value = Generation("漢" * 1400 + " [P1-R1]", "modelo", 0.01, {})
+        # Fewer characters than the limit, but more bytes than MAX_FINAL_BYTES.
+        generate.return_value = Generation("漢" * (MAX_FINAL_BYTES // 3 + 100) + " [P1-R1]", "modelo", 0.01, {})
         with self.assertRaisesRegex(SummaryError, str(MAX_FINAL_BYTES)):
             summarize(plan, self.config, allow_external=True)
 
@@ -244,7 +245,7 @@ class SummaryTests(unittest.TestCase):
         def handler(system, prompt, config):
             data = json.loads(prompt)
             if "fontes" in data:
-                text = f"Conceitos [{data['fontes'][0]['id']}]. " + "detalhe " * 195
+                text = f"Conceitos [{data['fontes'][0]['id']}]. " + "detalhe " * ((MAX_NOTE_BYTES - 150) // 8)
             else:
                 self.assertNotIn(unrelated_id, " ".join(item["texto"] for item in data["notas"]))
                 text = f"Síntese [{unrelated_id}]."
@@ -255,6 +256,7 @@ class SummaryTests(unittest.TestCase):
             summarize(plan, self.config, allow_external=True)
         self.assertEqual(generate.call_count, len(plan.blocks) + 1)
 
+    @patch("estudapdf.summary.MAX_PROMPT_BYTES", 6_000)
     @patch("estudapdf.summary.generate")
     def test_pair_of_notes_exceeding_serialized_budget_is_not_truncated(self, generate):
         plan = prepare_summary([Page(1, "x" * 6000)])
@@ -271,6 +273,30 @@ class SummaryTests(unittest.TestCase):
         with self.assertRaisesRegex(SummaryError, "Duas notas não cabem"):
             summarize(plan, self.config, allow_external=True)
         self.assertEqual(generate.call_count, len(plan.blocks))
+
+    @patch("estudapdf.summary.generate")
+    def test_multi_block_result_keeps_overview_and_every_part(self, generate):
+        plan = prepare_summary([Page(page, f"Conteúdo da página {page}. " * 120) for page in range(1, 9)])
+        self.assertGreater(len(plan.blocks), 2)
+
+        def handler(system, prompt, config):
+            data = json.loads(prompt)
+            if "fontes" in data:
+                return Generation(f"NOTA-{data['fontes'][0]['id']} [{data['fontes'][0]['id']}]", config.model, 0.01, {})
+            return Generation("VISAO-GERAL " + " ".join(item["texto"].split()[-1] for item in data["notas"]), config.model, 0.01, {})
+
+        generate.side_effect = handler
+        result = summarize(plan, self.config, allow_external=True)
+        self.assertTrue(result.overview.startswith("VISAO-GERAL"))
+        self.assertEqual(len(result.parts), len(plan.blocks))
+        for block, part in zip(plan.blocks, result.parts):
+            self.assertIn(f"NOTA-{block[0].id}", part["texto"])
+            self.assertIn(str(block[0].page), part["local"])
+            self.assertIn(part["texto"], result.text)
+        self.assertTrue(result.text.startswith("VISÃO GERAL"))
+        self.assertIn("RESUMO POR PARTES", result.text)
+        self.assertEqual(result.calls_completed, len(plan.blocks) + 1)
+        self.assertEqual(result.export("x.pdf")["parts"][0]["parte"], 1)
 
     @patch("estudapdf.summary.generate")
     def test_timeout_after_first_map_has_no_partial_success_result(self, generate):

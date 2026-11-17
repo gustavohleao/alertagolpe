@@ -303,21 +303,16 @@ def _summary_tab(mode: str, config: ProviderConfig, source_name: str):
         page_label = ("seção" if location == "seções" else "página") if len(plan.pages) == 1 else location
         call_label = "chamada" if plan.max_calls == 1 else "chamadas"
         html(f'<div class="summary-facts"><span>{icon("file",15)} {len(plan.pages)} {safe(page_label)} com texto</span><span>{icon("layers",15)} {total_chars} caracteres</span><span>{icon("spark",15)} Até {plan.max_calls} {call_label} de IA</span></div>')
-        st.caption("O número de chamadas depende do tamanho do texto e das sínteses intermediárias. Não há repetição automática. Documentos maiores podem levar vários minutos.")
-        allow_external = False
+        st.caption("O número de chamadas depende do tamanho do texto e das sínteses intermediárias. Se o Gemini estiver sobrecarregado (erro 503), cada chamada é repetida automaticamente até 3 vezes. Documentos maiores podem levar vários minutos.")
+        allow_external = True
         if mode != "Resposta com IA":
             st.info("Selecione Resposta com IA na barra lateral para gerar um resumo. A busca simples continua disponível na Sala de estudo.")
-        elif config.provider == "gemini":
-            allow_external = st.checkbox("Autorizo enviar todo o texto do intervalo selecionado à API Gemini para gerar o resumo.", value=False, key=f"summary_authorization_{scope}")
-            st.caption("Isso abrange todo o texto extraído dessas páginas ou seções, não apenas os trechos de uma pergunta. Pode consumir cota ou gerar cobrança conforme sua conta.")
         submitted = st.button("Gerar resumo do material", type="primary", use_container_width=True, disabled=mode != "Resposta com IA")
         if submitted:
             st.session_state.pop("summary_result", None)
             progress = None
             try:
                 config = _ready_config(config)
-                if config.provider == "gemini" and not allow_external:
-                    raise SummaryError("Autorize o envio do texto selecionado para gerar o resumo com Gemini.")
                 progress = st.progress(0.0, text="Preparando a leitura do material…")
 
                 def report(completed: int, maximum: int, message: str):
@@ -339,7 +334,17 @@ def _summary_tab(mode: str, config: ProviderConfig, source_name: str):
     with summary_col:
         with st.container(key="summary_output"):
             html(f'<div class="response-header"><h2>{icon("book",20)} Resumo do material</h2><span class="response-type">SÍNTESE COM IA</span></div>')
-            st.text(result.text)
+            parts = getattr(result, "parts", ())
+            if parts:
+                html(f'<div class="mini-label">{icon("spark",12)} VISÃO GERAL</div>')
+                st.text(result.overview)
+                html(f'<div class="mini-label next">{icon("layers",12)} RESUMO POR PARTES · {len(parts)} PARTES</div>')
+                for part in parts:
+                    # Texto do modelo permanece em st.text; o rótulo do expander é gerado pelo app.
+                    with st.expander(f"Parte {part['parte']} · {part['local']}", expanded=part["parte"] == 1):
+                        st.text(part["texto"])
+            else:
+                st.text(result.text)
             summary_warning = getattr(result, "warning", "")
             if summary_warning:
                 st.warning(summary_warning)
@@ -403,7 +408,6 @@ def render_app(root: Path) -> None:
                         st.caption("Cada pergunta é uma nova consulta.")
                     with action_col:
                         submitted = st.form_submit_button("Buscar e responder" if mode == "Resposta com IA" else "Encontrar trechos", type="primary", use_container_width=True)
-                authorized = st.checkbox("Autorizo enviar minha pergunta e os trechos recuperados à API Gemini.", value=False, key="query_consent")
                 if entry["is_demo"]:
                     st.caption("PARA COMEÇAR")
                     with st.container(key="question_examples"):
@@ -423,9 +427,6 @@ def render_app(root: Path) -> None:
                         active_config = _ready_config(active_config)
                     except ProviderError as exc:
                         st.error(str(exc))
-                        can_run = False
-                    if not authorized:
-                        st.warning("Autorize o envio dos trechos abaixo da pergunta antes de gerar com Gemini.")
                         can_run = False
                 if can_run:
                     try:

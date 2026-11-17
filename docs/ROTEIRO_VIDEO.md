@@ -150,8 +150,8 @@ Manter qwen2.5:3b na demonstração inicial, conforme a configuração atual.
 
 Para explicar o resumo, dizer que “global” significa o intervalo escolhido,
 não tudo que existe visualmente no PDF. O planejamento prevê máximo de 60 mil
-caracteres, até 20 chamadas previstas e 6 mil bytes UTF-8 por prompt como
-heurística conservadora. Se exceder, reduzir o intervalo em vez de cortar texto
+caracteres, até 20 chamadas previstas e 6 mil bytes UTF-8 por bloco lido como
+heurística conservadora. O resultado mostra uma visão geral e o resumo por partes. Se exceder, reduzir o intervalo em vez de cortar texto
 silenciosamente. Notas intermediárias exigem referências originais como
 `[P12-R1]`, diferentes de `[P12-T1]` nas perguntas. Referências emitidas na síntese
 também precisam ser originais. Uma saída final sem IDs é exibida com
@@ -165,8 +165,8 @@ Falha de uma etapa não deve ser apresentada como resumo completo. O aviso de
 falta de IDs não comprova que a resposta seja fiel ou completa.
 
 No Ollama, o texto selecionado vai ao serviço local. Se a demonstração usar
-Gemini, mostrar a autorização específica para enviar **todo o texto extraído
-do intervalo**, separada da autorização da pergunta. TXT/JSON não devem conter
+Gemini, explicar que **todo o texto extraído do intervalo** é enviado ao
+clicar em gerar o resumo. TXT/JSON não devem conter
 chave, mas podem conter informação do documento. Material e resultados ficam
 na memória da sessão, com exportação opcional que não apaga esse estado.
 Pontos podem ser omitidos, e

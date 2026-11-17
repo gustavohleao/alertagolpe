@@ -41,8 +41,9 @@ Critérios implementados, a conferir na demonstração:
   aviso no TXT e no campo `warning` do JSON.
 - Manter rejeição de notas intermediárias sem referências, IDs desconhecidos,
   texto vazio, recusa sem resumo, saída longa e outras falhas de etapa.
-- Exigir consentimento Gemini específico para todo o texto extraído do intervalo,
-  separado da autorização para perguntas.
+- ~~Exigir consentimento Gemini específico para todo o texto extraído do intervalo,
+  separado da autorização para perguntas.~~ Removido em 17/11/2026 por decisão do
+  grupo: a interface não exibe mais caixas de autorização.
 - Não apresentar resultado parcial como completo quando uma etapa falhar.
 - Exportar TXT/JSON sem chave quando o usuário decidir; manter o estado em
   memória da sessão, sem afirmar que a exportação o apaga.
@@ -129,7 +130,7 @@ testes simulados de chamadas externas reais. Não preencher métricas sem execu�
 
 Para o resumo, revisar manualmente cobertura e fidelidade de um intervalo curto,
 preservação das referências originais e ausência de cortes ocultos. Testar
-limites, falhas intermediárias, consentimento separado e exportações sem chave.
+limites, falhas intermediárias e exportações sem chave.
 O resultado 8/8 da recuperação não é uma nota de cobertura do resumo. Os
 61 testes e o terceiro piloto concluído não substituem revisão humana, PDF
 real ou avaliação de síntese em múltiplas chamadas. O caso real curto fez
@@ -145,7 +146,7 @@ somente uma chamada.
 - [ ] Conteúdo dos slides revisado e adaptado ao formato solicitado.
 - [ ] Tutorial próprio de aproximadamente dez minutos, com demonstração da ferramenta.
 - [ ] Registro de ferramentas de IA e contribuições do grupo.
-- [ ] Resumo: revisão humana de cobertura, referências, limites e consentimento,
+- [ ] Resumo: revisão humana de cobertura, referências e limites,
   com distinção entre estado concluído e falha parcial.
 - [ ] Demonstração ensaiada e cópia de segurança identificada como gravação.
 - [ ] Pacote sem ambiente virtual, chaves ou documentos privados.

@@ -23,7 +23,7 @@ class AppTests(unittest.TestCase):
             generate.return_value = Generation(content, "modelo-teste", 0.01, {})
             app = self.app()
 
-            next(box for box in app.checkbox if box.label.startswith("Autorizo enviar minha pergunta")).check().run()
+            self.assertFalse(any(box.label.startswith("Autorizo") for box in app.checkbox))
             app.text_area[0].set_value("Como funciona o RAG?")
             next(button for button in app.button if button.label == "Buscar e responder").click().run()
             self.assertFalse(app.exception)
