@@ -13,8 +13,8 @@ class ProviderError(RuntimeError):
     """Erro público sem chave, URL autenticada ou corpo de resposta privado.
 
     ``model_unavailable`` indica que o problema é do modelo naquele momento
-    (sobrecarga, tempo esgotado ou modelo inexistente): outro modelo pode
-    funcionar. Chave, cota e parâmetros inválidos não se resolvem trocando de modelo.
+    (sobrecarga, limite de uso do modelo, tempo esgotado ou modelo inexistente): outro modelo pode
+    funcionar, pois o Gemini conta o limite por modelo. Chave e parâmetros inválidos não se resolvem trocando de modelo.
     """
 
     def __init__(self, message: str, *, model_unavailable: bool = False):
@@ -114,7 +114,7 @@ def _request(client: httpx.Client, method: str, url: str, *, sleep=None, **kwarg
             429: "Limite de uso ou cota atingido. Confira sua conta antes de tentar novamente.",
         }
         raise ProviderError(messages.get(code, f"Serviço indisponível (HTTP {code}). Tente novamente mais tarde."),
-                            model_unavailable=code == 404 or code >= 500) from None
+                            model_unavailable=code in (404, 429) or code >= 500) from None
     except (httpx.RequestError, httpx.InvalidURL):
         raise ProviderError("Não foi possível conectar ao provedor. Confira a conexão e se o serviço está ativo.") from None
     try:
@@ -126,7 +126,7 @@ def _request(client: httpx.Client, method: str, url: str, *, sleep=None, **kwarg
     return data
 
 
-def generate(system: str, prompt: str, config: ProviderConfig, *, client: httpx.Client | None = None, json_output: bool = False) -> Generation:
+def generate(system: str, prompt: str, config: ProviderConfig, *, client: httpx.Client | None = None, json_output: bool = False, temperature: float = 0.2) -> Generation:
     config.validate()
     api_key = _normalize_api_key(config.api_key)
     started = perf_counter()
@@ -143,7 +143,7 @@ def generate(system: str, prompt: str, config: ProviderConfig, *, client: httpx.
                 "systemInstruction": {"parts": [{"text": system}]},
                 "contents": [{"role": "user", "parts": [{"text": prompt}]}],
                 # Modo JSON da API: evita quebras de linha soltas e texto fora do objeto.
-                "generationConfig": {"temperature": 0.2, "maxOutputTokens": 4096,
+                "generationConfig": {"temperature": temperature, "maxOutputTokens": 4096,
                                      **({"responseMimeType": "application/json"} if json_output else {})},
             },
         )

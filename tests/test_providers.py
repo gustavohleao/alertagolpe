@@ -104,7 +104,7 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(len(calls), 2)
 
     def test_errors_flag_when_another_model_could_work(self):
-        cases = {503: True, 500: True, 404: True, 401: False, 403: False, 429: False, 400: False}
+        cases = {503: True, 500: True, 404: True, 429: True, 401: False, 403: False, 400: False}
         for status, expected in cases.items():
             with self.subTest(status=status), patch("alertagolpe.providers.time.sleep"):
                 with self.assertRaises(ProviderError) as caught:

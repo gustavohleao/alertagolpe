@@ -5,9 +5,7 @@ A pessoa cola uma mensagem suspeita de WhatsApp, SMS ou e-mail e o AlertaGolpe
 mostra o nível de risco, os sinais de alerta (com o trecho exato da mensagem),
 com qual golpe conhecido ela se parece e o que fazer agora.
 
-Projeto acadêmico de IA Generativa, entrega em **19/11/2026**, grupo de seis.
-A primeira versão do projeto (EstudaPDF, um tutor de estudos com PDFs) está
-preservada na tag `estudapdf-final` do repositório.
+Projeto acadêmico de IA Generativa, entrega em **19/11/2026**, grupo de cinco integrantes.
 
 ## Começar neste computador
 
@@ -23,10 +21,11 @@ Abra **http://127.0.0.1:8501**. Também existe `iniciar.ps1`.
 
 Três camadas independentes, combinadas no resultado:
 
-1. **Regras locais** (`signals.py`): 10 padrões explicáveis — pedido de Pix,
+1. **Regras locais** (`signals.py`): 10 padrões de alerta — pedido de Pix,
    código ou senha, link, urgência, troca de número, prêmio, taxa antecipada,
-   instalação de aplicativo, dados pessoais e nome de instituição. Funcionam
-   sem internet e geram uma pontuação de 0 a 100.
+   instalação de aplicativo, dados pessoais e nome de instituição — e 1 sinal
+   de legitimidade (mandar usar o aplicativo oficial, sem link nem pedido de
+   dados). Funcionam sem internet e geram uma pontuação de 0 a 100.
 2. **Catálogo de golpes + busca** (`catalog.py`, `retrieval.py`): 16 golpes
    frequentes no Brasil, com fontes. A mensagem é comparada a eles por TF-IDF
    e similaridade do cosseno; os 3 mais parecidos vão para a IA como contexto
@@ -54,7 +53,8 @@ repositório. Erros temporários do Gemini (HTTP 5xx) são repetidos até três
 vezes; uma resposta em JSON quebrado é pedida de novo uma vez. Se o modelo
 principal continuar sobrecarregado ou deixar de existir, o app tenta os
 modelos reserva de `LLM_FALLBACK_MODELS`, em ordem, e mostra na tela qual
-modelo respondeu. Erros de chave ou de cota não trocam de modelo.
+modelo respondeu. O limite de uso por minuto (429) também aciona o reserva,
+pois é contado por modelo; erros de chave não trocam de modelo.
 
 ## Avaliação
 
@@ -63,20 +63,21 @@ modelo respondeu. Erros de chave ou de cota não trocam de modelo.
 & '.\.tools\python\python.exe' avaliar.py --local  # só regras locais
 ```
 
-O conjunto `avaliacao/mensagens.json` tem 20 golpes e 12 mensagens legítimas,
-fictícios, escritos a partir de alertas públicos. Resultado em 17/11/2026 com
-`gemini-3.5-flash-lite`:
+O conjunto `avaliacao/mensagens.json` tem 22 golpes e 14 mensagens legítimas,
+fictícios e escritos a partir de alertas públicos, mais uma mensagem legítima
+real (aviso de fatura do Nubank) que gerou um alarme falso e foi corrigida.
+Resultado em 18/11/2026 com `gemini-3.5-flash-lite` e modelos reserva:
 
 | | Só regras locais | Com IA |
 | --- | --- | --- |
-| Golpes detectados | 10/20 | 20/20 |
-| Tipo de golpe correto | 8/10 | 20/20 |
-| Alarmes falsos | 1/12 | 0/12 |
-| Acurácia | 21/32 | 32/32 |
-| Tempo médio | < 0,1 s | 3,95 s |
+| Golpes detectados | 11/22 | 22/22 |
+| Tipo de golpe correto | 9/11 | 22/22 |
+| Alarmes falsos | 1/14 | 0/14 |
+| Acurácia | 24/36 | 36/36 |
+| Tempo médio | < 0,1 s | 5,4 s |
 
-O conjunto é pequeno e foi escrito pelo próprio grupo: o resultado demonstra
-funcionamento, não desempenho garantido em mensagens reais.
+O conjunto é pequeno e foi escrito quase todo pelo próprio grupo: o resultado
+demonstra funcionamento, não desempenho garantido em mensagens reais.
 
 ## Testes
 
@@ -84,7 +85,7 @@ funcionamento, não desempenho garantido em mensagens reais.
 & '.\.tools\python\python.exe' -m unittest discover -s tests
 ```
 
-54 testes automatizados (regras, catálogo, busca, validação da resposta da IA,
+56 testes automatizados (regras, catálogo, busca, validação da resposta da IA,
 cliente HTTP e interface). As respostas da IA nos testes são simuladas.
 
 ## Limites e privacidade

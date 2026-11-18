@@ -11,7 +11,7 @@ from .analyzer import MAX_MESSAGE_CHARS, AnalysisError, analyze
 from .catalog import BY_ID, CATALOG
 from .providers import ProviderConfig, ProviderError, list_models
 from .settings import load_settings
-from .signals import RULES
+from .signals import RULES, alerts
 from .ui import brand, hero, html, icon, safe, section_heading
 
 EXAMPLES = {
@@ -98,13 +98,13 @@ def _result(analysis) -> None:
     left, right = st.columns([1.35, 1], gap="large")
     with left:
         with st.container(key="findings_panel"):
-            html(f'<div class="panel-header">{icon("alert",18)}<h2>Por que é suspeito</h2><span class="panel-count">{len(analysis.findings) if analysis.used_ai else len(analysis.signals)}</span></div>')
+            html(f'<div class="panel-header">{icon("alert",18)}<h2>Por que é suspeito</h2><span class="panel-count">{len(analysis.findings) if analysis.used_ai else len(alerts(analysis.signals))}</span></div>')
             if analysis.used_ai and analysis.findings:
                 for n, finding in enumerate(analysis.findings, start=1):
                     html(f'<div class="finding"><span class="finding-num">{n}</span><div><mark class="quote">“{safe(finding.trecho)}”</mark>'
                          f'<p>{safe(finding.explicacao)}</p></div></div>')
-            elif not analysis.used_ai and analysis.signals:
-                for n, sig in enumerate(analysis.signals, start=1):
+            elif not analysis.used_ai and alerts(analysis.signals):
+                for n, sig in enumerate(alerts(analysis.signals), start=1):
                     html(f'<div class="finding"><span class="finding-num">{n}</span><div><mark class="quote">“{safe(sig.trecho)}”</mark>'
                          f'<p><b>{safe(sig.rotulo)}.</b> {safe(sig.explicacao)}</p></div></div>')
             else:
@@ -127,7 +127,7 @@ def _result(analysis) -> None:
         with st.container(key="signals_panel"):
             html(f'<div class="panel-header">{icon("search",18)}<h2>Sinais automáticos</h2><span class="panel-count">{analysis.local_score}/100</span></div>'
                  f'<div class="score-line {analysis.local_level}"><div class="lib-track"><i style="--w:{analysis.local_score}%"></i></div></div>'
-                 '<div class="chips">' + ("".join(f'<span class="chip">{safe(s.rotulo)}</span>' for s in analysis.signals) or '<span class="chip off">nenhum</span>') + "</div>"
+                 '<div class="chips">' + ("".join(f'<span class="chip{" good" if s.peso < 0 else ""}">{safe(s.rotulo)}</span>' for s in analysis.signals) or '<span class="chip off">nenhum</span>') + "</div>"
                  '<p class="muted-note">Detectados por regras fixas, sem IA. Servem de segunda opinião.</p>')
         meta = f"{analysis.elapsed_seconds:.2f} s · {analysis.provider} · {analysis.model}" if analysis.used_ai else f"{analysis.elapsed_seconds:.2f} s · sem chamada de IA"
     if analysis.fallback_from:
@@ -139,8 +139,8 @@ def _result(analysis) -> None:
 
 def _analyze_tab(config: ProviderConfig, fallback_models: tuple[str, ...] = ()) -> None:
     with st.container(key="composer"):
-        section_heading("01", "Cole a mensagem suspeita", "WhatsApp, SMS, e-mail ou post. Pode colar exatamente como recebeu.")
-        message = st.text_area("Mensagem", key="message_input", height=150, max_chars=MAX_MESSAGE_CHARS, label_visibility="collapsed",
+        section_heading("01", "Cole a mensagem suspeita", "WhatsApp, SMS, e-mail ou post, até 10 mil caracteres. Pode colar exatamente como recebeu.")
+        message = st.text_area("Mensagem", key="message_input", height=180, max_chars=MAX_MESSAGE_CHARS, label_visibility="collapsed",
                                placeholder="Ex.: Oi, troquei de número, consegue me fazer um Pix urgente?")
         html('<div class="examples-label">OU TESTE COM UM EXEMPLO</div>')
         with st.container(key="examples"):
@@ -152,7 +152,7 @@ def _analyze_tab(config: ProviderConfig, fallback_models: tuple[str, ...] = ()) 
         st.session_state.pop("analysis", None)
         try:
             active = _ready_config(config) if config.api_key else None
-            with st.spinner("Procurando sinais de golpe…"):
+            with st.spinner("Procurando sinais de golpe… Mensagens longas podem levar até 30 segundos."):
                 analysis = analyze(message, active, fallback_models)
             st.session_state["analysis"] = analysis
             history = st.session_state.setdefault("history", [])

@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 from streamlit.testing.v1 import AppTest
 
-from alertagolpe.analyzer import AnalysisError, analyze, catalog_index
+from alertagolpe.analyzer import MAX_MESSAGE_CHARS, AnalysisError, analyze, catalog_index
 from alertagolpe.catalog import BY_ID, CATALOG
 from alertagolpe.providers import Generation, ProviderConfig
 from alertagolpe.signals import detect, local_level, local_score
@@ -49,6 +49,17 @@ class SignalTests(unittest.TestCase):
         for key, text in cases.items():
             with self.subTest(rule=key):
                 self.assertIn(key, {s.key for s in detect(text)})
+
+    def test_official_channel_lowers_score_only_without_link(self):
+        nubank = "Nubank: Seu cartao sera bloqueado em 3 dias devido ao atraso da sua fatura. Resolva acessando o app ou ligue 4020 0185"
+        signals = detect(nubank)
+        self.assertIn("canal_oficial", {s.key for s in signals})
+        self.assertEqual(local_level(local_score(signals)), "baixo")
+        scam = "Nubank: seu cartão será bloqueado hoje. Resolva acessando o app pelo link nubank-regulariza.site"
+        scam_signals = detect(scam)
+        self.assertNotIn("canal_oficial", {s.key for s in scam_signals})
+        self.assertIn("link", {s.key for s in scam_signals})
+        self.assertNotIn("canal_oficial", {s.key for s in detect("Baixe o aplicativo de suporte que vou te enviar")})
 
     def test_normal_message_scores_low(self):
         signals = detect("A reunião do grupo ficou para quinta às 19h na biblioteca.")
@@ -109,10 +120,10 @@ class AnalyzerTests(unittest.TestCase):
         self.assertEqual(result.export()["modelo_reserva_no_lugar_de"], "teste")
 
     @patch("alertagolpe.analyzer.generate")
-    def test_key_or_quota_errors_do_not_fall_back(self, gen):
+    def test_key_errors_do_not_fall_back(self, gen):
         from alertagolpe.providers import ProviderError
-        gen.side_effect = ProviderError("Limite de uso ou cota atingido.", model_unavailable=False)
-        with self.assertRaisesRegex(ProviderError, "cota"):
+        gen.side_effect = ProviderError("Autenticação recusada. Confira a chave.", model_unavailable=False)
+        with self.assertRaisesRegex(ProviderError, "chave"):
             analyze(FALSO_PARENTE, CONFIG, ("reserva-1",))
         self.assertEqual(gen.call_count, 1)
 
@@ -131,15 +142,21 @@ class AnalyzerTests(unittest.TestCase):
         self.assertEqual((gen.call_count, result.fallback_from), (1, ""))
 
     @patch("alertagolpe.analyzer.generate")
-    def test_broken_json_is_retried_once(self, gen):
-        gen.side_effect = [Generation("{quebrado", "teste", 0.1, {}), reply()]
+    def test_broken_json_is_retried_up_to_twice(self, gen):
+        broken = Generation("{quebrado", "teste", 0.1, {})
+        gen.side_effect = [broken, broken, reply()]
         self.assertEqual(analyze(FALSO_PARENTE, CONFIG).risk, "alto")
-        self.assertEqual(gen.call_count, 2)
+        self.assertEqual(gen.call_count, 3)
         gen.reset_mock(side_effect=True)
-        gen.side_effect = [Generation("{quebrado", "teste", 0.1, {})] * 2
+        gen.side_effect = [broken] * 3
         with self.assertRaises(AnalysisError):
             analyze(FALSO_PARENTE, CONFIG)
-        self.assertEqual(gen.call_count, 2)
+        self.assertEqual(gen.call_count, 3)
+
+    def test_code_request_cancels_official_channel_discount(self):
+        signals = detect("Aqui é da equipe de prevenção do seu banco. Confirme o token que aparece no seu app e não desligue.")
+        self.assertNotIn("canal_oficial", {s.key for s in signals})
+        self.assertIn("codigo_senha", {s.key for s in signals})
 
     @patch("alertagolpe.analyzer.generate")
     def test_injection_inside_message_is_sent_as_data(self, gen):
@@ -156,7 +173,7 @@ class AnalyzerTests(unittest.TestCase):
         self.assertTrue(analyze(FALSO_PARENTE, CONFIG).divergent)
 
     def test_input_limits(self):
-        for message in ("", "   ", "x" * 3001):
+        for message in ("", "   ", "x" * (MAX_MESSAGE_CHARS + 1)):
             with self.subTest(size=len(message)), self.assertRaises(AnalysisError):
                 analyze(message, None)
 

@@ -59,6 +59,10 @@ RULES: tuple[Rule, ...] = (
     Rule("instituicao", "Usa o nome de banco, empresa ou órgão público",
          "Golpistas se passam por instituições conhecidas para ganhar confiança.", 10,
          re.compile(r"\b(banco central|banco|central de (?:seguran[cç]a|atendimento)|receita federal|correios|inss|gov\.br|serasa|caixa|nubank|ita[uú]|bradesco|santander)\b", _I)),
+    # Sinal de legitimidade (peso negativo): só vale quando a mensagem não tem link.
+    Rule("canal_oficial", "Orienta usar o aplicativo ou canal oficial",
+         "Mandar a pessoa ao aplicativo oficial, sem link, é típico de avisos legítimos.", -15,
+         re.compile(r"((?:acessando|acesse|abra|abrindo|use|usando|pelo|no seu|pelo seu|pelo pr[oó]prio) (?:o )?(?:app|aplicativo)\b(?! (?:de suporte|que (?:vou|vamos) (?:te )?enviar))|n[uú]mero (?:no|do) verso do (?:seu )?cart[aã]o|canais oficiais)", _I)),
 )
 
 LEVELS = (("alto", 55), ("medio", 25), ("baixo", 0))
@@ -70,11 +74,20 @@ def detect(message: str) -> list[Signal]:
         match = rule.pattern.search(message)
         if match:
             found.append(Signal(rule.key, rule.rotulo, rule.explicacao, rule.peso, match.group(0)))
+    # Um golpista também pode citar o app e, junto, mandar link ou pedir código, Pix ou dados:
+    # nesses casos o "sinal de legitimidade" não vale.
+    if any(s.key in ("link", "instalar_app", "codigo_senha", "pix", "dados_pessoais", "taxa_antecipada") for s in found):
+        found = [s for s in found if s.peso > 0]
     return found
 
 
+def alerts(signals: list[Signal]) -> list[Signal]:
+    """Só os sinais de alerta (peso positivo), sem os sinais de legitimidade."""
+    return [s for s in signals if s.peso > 0]
+
+
 def local_score(signals: list[Signal]) -> int:
-    return min(100, sum(signal.peso for signal in signals))
+    return max(0, min(100, sum(signal.peso for signal in signals)))
 
 
 def local_level(score: int) -> str:

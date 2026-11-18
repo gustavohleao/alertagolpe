@@ -519,3 +519,5 @@ button:focus-visible, a:focus-visible {outline-color: rgba(251,191,36,.7)!import
 .risk-banner.high::after {content:""; position:absolute; left:0; right:0; bottom:0; height:8px; background:var(--ep-hazard); opacity:.9;}
 .flow-step:hover {border-color:#fdba74;}
 [data-testid="stTab"]:hover {background:#fef2f2;}
+
+.chip.good {color:#065f46; background:#d1fae5; border-color:#6ee7b7;}
