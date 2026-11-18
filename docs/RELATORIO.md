@@ -21,6 +21,40 @@
 
 ---
 
+## Sumário
+
+- [1. Descrição da aplicação](#1-descrição-da-aplicação)
+  - [1.1 Problema](#11-problema)
+  - [1.2 Solução proposta](#12-solução-proposta)
+  - [1.3 Público e escopo](#13-público-e-escopo)
+- [2. Ferramentas utilizadas](#2-ferramentas-utilizadas)
+  - [2.1 IA generativa dentro da aplicação](#21-ia-generativa-dentro-da-aplicação)
+  - [2.2 IA generativa no desenvolvimento](#22-ia-generativa-no-desenvolvimento)
+  - [2.3 Bibliotecas e ambiente](#23-bibliotecas-e-ambiente)
+- [3. Processo de desenvolvimento](#3-processo-de-desenvolvimento)
+  - [3.1 Linha do tempo](#31-linha-do-tempo)
+  - [3.2 Técnicas de IA](#32-técnicas-de-ia)
+  - [3.3 Arquitetura](#33-arquitetura)
+  - [3.4 Fluxo da análise e validação](#34-fluxo-da-análise-e-validação)
+  - [3.5 Catálogo de golpes](#35-catálogo-de-golpes)
+  - [3.6 Prompts](#36-prompts)
+  - [3.7 Decisões técnicas e justificativas](#37-decisões-técnicas-e-justificativas)
+  - [3.8 Testes automatizados](#38-testes-automatizados)
+- [4. Visão crítica](#4-visão-crítica)
+  - [4.1 Avaliação](#41-avaliação)
+  - [4.2 Análise de cada ferramenta](#42-análise-de-cada-ferramenta)
+  - [4.3 Comparação com soluções existentes](#43-comparação-com-soluções-existentes)
+  - [4.4 Limitações da solução](#44-limitações-da-solução)
+  - [4.5 Lições aprendidas](#45-lições-aprendidas)
+- [5. Ética e uso de IA](#5-ética-e-uso-de-ia)
+- [6. Conclusões e sugestões futuras](#6-conclusões-e-sugestões-futuras)
+- [7. Referências](#7-referências)
+- [Apêndice A — Prompt](#apêndice-a--prompt)
+- [Apêndice B — Regras locais](#apêndice-b--regras-locais)
+- [Apêndice C — Execução](#apêndice-c--execução)
+
+---
+
 ## 1. Descrição da aplicação
 
 ### 1.1 Problema
@@ -469,15 +503,7 @@ gravações.
 O registro detalhado está em `docs/USO_DE_IA.md`.
 
 **Participação do grupo.** O desenvolvimento do código foi concentrado em
-Gustavo Henrique Leão, com assistência de IA. As demais atividades foram divididas entre os integrantes:
-
-| Integrante | Atividades |
-| --- | --- |
-| Gustavo Henrique Leão | Coordenação; desenvolvimento da aplicação com assistência do Codex e do Claude Code; integração com a API Gemini; testes com mensagens reais (incluindo o alarme falso da seção 4.1); revisão do código, do catálogo, da avaliação e do relatório |
-| Otavio Aparecido Pegorin | Conferência do catálogo de golpes com as fontes da Febraban e do Banco Central; testes com novas mensagens reais |
-| Leonardo Gabriel Lopes | Demonstração ao vivo da aplicação na apresentação e preparação do ambiente, com plano alternativo |
-| Felipe Gabriel Tagliabues | Vídeo tutorial da Parte 2 (roteiro e gravação) |
-| Murilo Rodrigues Lima | Slides e ensaio da apresentação oral (divisão das falas e preparação para as perguntas) |
+Gustavo Henrique Leão, com assistência de IA.
 
 ---
 

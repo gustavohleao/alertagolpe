@@ -20,15 +20,7 @@ conteúdo pessoal. O texto de uma resposta simulada não comprova uma chamada re
 ## Participação do grupo
 
 O desenvolvimento do código foi concentrado em Gustavo Henrique Leão, com
-assistência de IA. As demais atividades foram divididas entre os integrantes:
-
-| Integrante | Atividades |
-| --- | --- |
-| Gustavo Henrique Leão | Coordenação; desenvolvimento da aplicação com assistência do Codex e do Claude Code; integração com a API Gemini; testes com mensagens reais (incluindo o alarme falso da seção 4.1 do relatório); revisão do código, do catálogo, da avaliação e do relatório |
-| Otavio Aparecido Pegorin | Conferência do catálogo de golpes com as fontes da Febraban e do Banco Central; testes com novas mensagens reais |
-| Leonardo Gabriel Lopes | Demonstração ao vivo da aplicação na apresentação e preparação do ambiente, com plano alternativo |
-| Felipe Gabriel Tagliabues | Vídeo tutorial da Parte 2 (roteiro e gravação) |
-| Murilo Rodrigues Lima | Slides e ensaio da apresentação oral (divisão das falas e preparação para as perguntas) |
+assistência de IA.
 
 ## Declaração
 
@@ -36,9 +28,8 @@ assistência de IA. As demais atividades foram divididas entre os integrantes:
 > e os textos gerados foram revisados por Gustavo Henrique Leão, e as decisões
 > humanas e limitações observadas estão documentadas no relatório. No
 > aplicativo, o modelo generativo recebe a mensagem colada pelo usuário, os
-> sinais das regras locais e os golpes mais parecidos do catálogo. Os
-> integrantes realizaram as atividades de gravação, edição e apresentação
-> indicadas acima.
+> sinais das regras locais e os golpes mais parecidos do catálogo. A gravação
+> e a edição do vídeo e a apresentação foram feitas pelos integrantes do grupo.
 
 ## Cuidados para a entrega
 
