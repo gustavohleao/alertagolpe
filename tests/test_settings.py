@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from estudapdf.settings import load_settings
+from alertagolpe.settings import load_settings
 
 
 class SettingsTests(unittest.TestCase):

@@ -2,8 +2,8 @@
 
 import unittest
 
-from estudapdf.document import Chunk
-from estudapdf.retrieval import DocumentIndex
+from alertagolpe.models import Chunk
+from alertagolpe.retrieval import DocumentIndex
 
 
 class RetrievalTests(unittest.TestCase):

@@ -8,7 +8,7 @@ import math
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-from .document import Chunk
+from .models import Chunk
 
 
 @dataclass(frozen=True)
@@ -18,7 +18,7 @@ class SearchHit:
 
 
 class DocumentIndex:
-    """Índice de um documento, sem treinamento de classificador ou embeddings.
+    """Índice do catálogo de golpes, sem treinamento de classificador ou embeddings.
 
     Similaridade mede coincidência de vocabulário ponderado. Não é uma
     probabilidade de acerto e não resolve sinônimos por significado.

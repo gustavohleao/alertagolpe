@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import httpx
 
-from estudapdf.providers import ProviderConfig, ProviderError, generate, list_models
+from alertagolpe.providers import ProviderConfig, ProviderError, generate, list_models
 
 
 class ProviderTests(unittest.TestCase):
@@ -67,7 +67,7 @@ class ProviderTests(unittest.TestCase):
             if len(calls) < 3:
                 return httpx.Response(503, json={"error": {"message": "high demand"}})
             return httpx.Response(200, json={"candidates": [{"finishReason": "STOP", "content": {"parts": [{"text": "ok"}]}}]})
-        with patch("estudapdf.providers.time.sleep") as sleep:
+        with patch("alertagolpe.providers.time.sleep") as sleep:
             result = generate("s", "p", ProviderConfig("gemini", "modelo", "chave-ficticia"), client=self.client(handler))
         self.assertEqual(result.text, "ok")
         self.assertEqual(len(calls), 3)
@@ -78,7 +78,7 @@ class ProviderTests(unittest.TestCase):
         def handler(request):
             calls.append(1)
             return httpx.Response(503, text="conteudo-privado")
-        with patch("estudapdf.providers.time.sleep") as sleep:
+        with patch("alertagolpe.providers.time.sleep") as sleep:
             with self.assertRaises(ProviderError) as caught:
                 generate("s", "p", ProviderConfig("gemini", "modelo", "chave-ficticia"), client=self.client(handler))
         self.assertEqual(len(calls), 4)
@@ -110,14 +110,14 @@ class ProviderTests(unittest.TestCase):
                 def handler(request):
                     calls.append(1)
                     return httpx.Response(status)
-                with patch("estudapdf.providers.time.sleep") as sleep:
+                with patch("alertagolpe.providers.time.sleep") as sleep:
                     with self.assertRaises(ProviderError):
                         generate("s", "p", ProviderConfig("gemini", "modelo", "chave-ficticia"), client=self.client(handler))
                 self.assertEqual(len(calls), 1)
                 sleep.assert_not_called()
 
     def test_retry_after_header_is_respected_with_cap(self):
-        from estudapdf.providers import MAX_RETRY_AFTER, _retry_delay
+        from alertagolpe.providers import MAX_RETRY_AFTER, _retry_delay
         self.assertGreaterEqual(_retry_delay(httpx.Response(503, headers={"retry-after": "8"}), 0), 8)
         self.assertLessEqual(_retry_delay(httpx.Response(503, headers={"retry-after": "999"}), 0), MAX_RETRY_AFTER + 0.5)
 
@@ -162,7 +162,7 @@ class ProviderTests(unittest.TestCase):
         result = generate("s", "p", ProviderConfig("gemini", "modelo", " \nchave-ficticia\t "), client=self.client(handler))
         self.assertEqual(result.text, "Resposta")
 
-    @patch("estudapdf.providers.httpx.Client")
+    @patch("alertagolpe.providers.httpx.Client")
     def test_internal_key_whitespace_rejected_before_client_or_request(self, client_factory):
         for key in ("chave ficticia", "chave\nficticia", "chave\tficticia", "chave\rficticia", "chave\u00a0ficticia"):
             for operation in ("generate", "list_models"):
@@ -175,7 +175,7 @@ class ProviderTests(unittest.TestCase):
                     self.assertNotIn(key, str(caught.exception))
         client_factory.assert_not_called()
 
-    @patch("estudapdf.providers.httpx.Client")
+    @patch("alertagolpe.providers.httpx.Client")
     def test_missing_keys_rejected_before_client_creation(self, client_factory):
         for key in ("", " \n\t "):
             with self.subTest(key=repr(key)):

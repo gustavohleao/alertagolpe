@@ -6,6 +6,6 @@ import sys
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from estudapdf.frontend import render_app
+from alertagolpe.frontend import render_app
 
 render_app(ROOT)

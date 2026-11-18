@@ -1,52 +1,75 @@
-"""Avaliação controlada do exemplo interno. Sem --gerar, não usa API."""
+"""Avalia o AlertaGolpe no conjunto avaliacao/mensagens.json.
 
-import argparse
+Uso:  python avaliar.py            (regras locais e IA, se houver chave no .env)
+      python avaliar.py --local    (somente regras locais, sem chamadas à API)
+
+Considera "detectado como golpe" um risco alto ou médio. Salva o resultado de
+cada mensagem em output/avaliacao-resultados.json.
+"""
+
+from datetime import datetime, timezone
 import json
-import os
 from pathlib import Path
+import statistics
 import sys
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from dotenv import load_dotenv
-
-from estudapdf.demo import DEMO_NAME, demo_pages
-from estudapdf.document import split_pages
-from estudapdf.providers import ProviderConfig
-from estudapdf.retrieval import DocumentIndex
-from estudapdf.service import run_query
+from alertagolpe.analyzer import analyze  # noqa: E402
+from alertagolpe.providers import ProviderConfig, ProviderError  # noqa: E402
+from alertagolpe.settings import load_settings  # noqa: E402
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--gerar", action="store_true", help="Faz chamadas reais ao provedor configurado em .env; pode consumir cota/créditos e envia as perguntas e trechos demonstrativos.")
-    parser.add_argument("--saida", type=Path, default=ROOT / "output" / "avaliacao-demo.json")
-    args = parser.parse_args()
-    load_dotenv(ROOT / ".env")
-    config = None
-    if args.gerar:
-        provider = "gemini"
-        config = ProviderConfig(provider=provider, model=os.getenv("LLM_MODEL", ""), api_key=os.getenv("GEMINI_API_KEY", ""), base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"), timeout=float(os.getenv("LLM_TIMEOUT_SECONDS", "90")))
-        config.validate()
-    if args.saida.exists():
-        parser.error("A saída já existe. Escolha outro nome para preservar o registro anterior.")
-    index = DocumentIndex(split_pages(demo_pages()))
-    cases = json.loads((ROOT / "data" / "avaliacao_demo.json").read_text(encoding="utf-8"))
-    records = []
-    for case in cases:
-        result = run_query(case["pergunta"], index, config)
-        found = {hit.chunk.page for hit in result.hits}
-        expected = set(case["secoes_esperadas"])
-        record = {"caso": case, "secao_esperada_no_top3": bool(expected & found) if expected else None, "consulta": result.export(DEMO_NAME), "revisao_humana_da_resposta": "pendente"}
-        records.append(record)
-        print(f"Caso {case['id']}: {result.status}; seções recuperadas: {sorted(found)}")
-    positive = [record for record in records if record["secao_esperada_no_top3"] is not None]
-    summary = {"modo": "geracao_real" if args.gerar else "somente_recuperacao", "fonte": "Texto demonstrativo assistido por IA, não um PDF ou benchmark independente.", "casos": len(records), "perguntas_com_secao_de_referencia": len(positive), "secao_de_referencia_no_top3": sum(record["secao_esperada_no_top3"] for record in positive), "nota": "Mede somente presença da seção esperada entre até três trechos neste exemplo controlado. Não mede correção de respostas nem desempenho em PDFs reais.", "registros": records}
-    args.saida.parent.mkdir(parents=True, exist_ok=True)
-    args.saida.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"Resultado salvo em {args.saida}")
-    print(f"Seção esperada no top 3: {summary['secao_de_referencia_no_top3']}/{len(positive)} perguntas com referência.")
+def run(mode: str, messages: list[dict], config) -> dict:
+    rows = []
+    for item in messages:
+        try:
+            result = analyze(item["texto"], config)
+            rows.append({"id": item["id"], "rotulo": item["rotulo"], "esperado": item["golpe"], "risco": result.risk,
+                         "golpe_previsto": result.scam_id, "pontuacao_local": result.local_score,
+                         "segundos": result.elapsed_seconds, "erro": None})
+        except (ProviderError, ValueError) as exc:
+            rows.append({"id": item["id"], "rotulo": item["rotulo"], "esperado": item["golpe"], "risco": None,
+                         "golpe_previsto": None, "pontuacao_local": None, "segundos": None, "erro": str(exc)})
+        print(f"  {mode:5} {item['id']}: {rows[-1]['risco'] or 'ERRO'}", flush=True)
+    scams = [r for r in rows if r["rotulo"] == "golpe" and r["risco"]]
+    legit = [r for r in rows if r["rotulo"] == "legitima" and r["risco"]]
+    detected = [r for r in scams if r["risco"] in ("alto", "medio")]
+    false_alarm = [r for r in legit if r["risco"] in ("alto", "medio")]
+    times = [r["segundos"] for r in rows if r["segundos"] is not None]
+    return {
+        "modo": mode,
+        "golpes_detectados": f"{len(detected)}/{len(scams)}",
+        "golpes_como_alto": f"{sum(r['risco'] == 'alto' for r in scams)}/{len(scams)}",
+        "tipo_de_golpe_correto": f"{sum(r['golpe_previsto'] == r['esperado'] for r in detected)}/{len(detected)}",
+        "alarmes_falsos": f"{len(false_alarm)}/{len(legit)}",
+        "alarmes_falsos_alto": f"{sum(r['risco'] == 'alto' for r in legit)}/{len(legit)}",
+        "acuracia": f"{len(detected) + len(legit) - len(false_alarm)}/{len(scams) + len(legit)}",
+        "erros": sum(r["erro"] is not None for r in rows),
+        "tempo_medio_s": round(statistics.mean(times), 2) if times else None,
+        "tempo_max_s": round(max(times), 2) if times else None,
+        "por_mensagem": rows,
+    }
+
+
+def main() -> None:
+    data = json.loads((ROOT / "avaliacao" / "mensagens.json").read_text(encoding="utf-8"))
+    messages = data["mensagens"]
+    settings = load_settings(ROOT)
+    results = [run("local", messages, None)]
+    if "--local" not in sys.argv and settings["GEMINI_API_KEY"].strip():
+        config = ProviderConfig("gemini", settings["LLM_MODEL"].strip(), settings["GEMINI_API_KEY"].strip(), timeout=90)
+        results.append(run("ia", messages, config))
+    print("\nResumo")
+    keys = ["golpes_detectados", "golpes_como_alto", "tipo_de_golpe_correto", "alarmes_falsos", "alarmes_falsos_alto", "acuracia", "erros", "tempo_medio_s", "tempo_max_s"]
+    for key in keys:
+        print(f"  {key:24}" + "".join(f"{str(r[key]):>12}" for r in results))
+    out = ROOT / "output" / "avaliacao-resultados.json"
+    out.parent.mkdir(exist_ok=True)
+    out.write_text(json.dumps({"data": datetime.now(timezone.utc).isoformat(), "modelo": settings["LLM_MODEL"],
+                               "conjunto": data["descricao"], "resultados": results}, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"\nDetalhes salvos em {out}")
 
 
 if __name__ == "__main__":

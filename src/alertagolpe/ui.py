@@ -22,6 +22,9 @@ _PATHS = {
     "circle": '<circle cx="12" cy="12" r="8"/>',
     "lock": '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
     "upload": '<path d="M12 16V4m-5 5 5-5 5 5M4 20h16"/>',
+    "alert": '<path d="M12 3 2 20h20Z"/><path d="M12 10v4M12 17h.01"/>',
+    "chat": '<path d="M4 5h16v11H9l-5 4Z"/><path d="M8 9h8M8 12h5"/>',
+    "link": '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
 }
 
 
@@ -47,7 +50,7 @@ def section_heading(number: str, title: str, subtitle: str = "") -> None:
 
 
 def brand() -> None:
-    html(f'<div class="brand"><span class="brand-mark">{icon("book", 22)}</span><div class="brand-name">Estuda<span>PDF</span><small>TUTOR DE REVISÃO COM IA</small></div></div>')
+    html(f'<div class="brand"><span class="brand-mark">{icon("shield", 22)}</span><div class="brand-name">Alerta<span>Golpe</span><small>CONFIRA ANTES DE CLICAR</small></div></div>')
 
 
 def stat(icon_name: str, value: int, label: str) -> str:
@@ -77,20 +80,17 @@ def criteria_list(criteria, met) -> str:
 def hero() -> None:
     html(f'''<section class="hero" aria-labelledby="hero-title">
       <div class="hero-bg" aria-hidden="true"><span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span><span class="hero-grid"></span></div>
-      <div class="hero-copy"><div class="eyebrow"><span class="pulse"></span> TUTOR DE REVISÃO COM IA</div>
-      <h1 id="hero-title">Ler é o começo.<br>Pratique para <em>aprender.</em></h1>
-      <p>Responda a perguntas do seu material, receba feedback com critérios claros<br class="desktop-break"> e descubra exatamente o que precisa revisar.</p>
-      <div class="hero-chips"><span>{icon("target",15)} Perguntas do seu PDF</span><span>{icon("check",15)} Feedback com critérios</span><span>{icon("quote",15)} Fontes verificáveis</span></div></div>
+      <div class="hero-copy"><div class="eyebrow"><span class="pulse"></span> DETECTOR DE GOLPES COM IA</div>
+      <h1 id="hero-title">Recebeu uma mensagem estranha?<br><em>Confira antes de clicar.</em></h1>
+      <p>Cole a mensagem de WhatsApp, SMS ou e-mail. O AlertaGolpe mostra os sinais de alerta, com qual golpe conhecido ela se parece e o que fazer agora.</p>
+      <div class="hero-chips"><span>{icon("alert",15)} Sinais explicados</span><span>{icon("book",15)} 16 golpes catalogados</span><span>{icon("check",15)} O que fazer agora</span></div></div>
       <div class="hero-visual" aria-hidden="true">
-        <div class="float-card card-question"><div class="fc-label">{icon("spark",13)} PERGUNTA 2 DE 3</div>
-          <div class="fc-line w90"></div><div class="fc-line w70"></div>
-          <div class="fc-input"><span class="fc-typing"></span><span class="fc-caret"></span></div></div>
-        <div class="float-card card-score"><div class="mini-ring"><span>2/2</span></div><div><strong>Critérios</strong><small>atendidos</small></div></div>
-        <div class="float-card card-source">{icon("check",13)} Fonte conferida · <b>P4-T2</b></div>
-        <div class="float-card card-plan"><div class="fc-label">{icon("chart",13)} PLANO DE REVISÃO</div>
-          <div class="bar-row"><span>RAG</span><i style="--w:92%"></i></div>
-          <div class="bar-row"><span>TF-IDF</span><i style="--w:58%" class="warn"></i></div>
-          <div class="bar-row"><span>Embeddings</span><i style="--w:34%" class="low"></i></div></div>
+        <div class="float-card card-chat"><div class="fc-label">{icon("chat",13)} MENSAGEM RECEBIDA</div>
+          <div class="chat-bubble">Oi mãe, troquei de número 😅 consegue me fazer um <mark>Pix urgente</mark>?</div></div>
+        <div class="float-card card-risk"><span class="risk-dot"></span><div><strong>RISCO ALTO</strong><small>golpe muito provável</small></div></div>
+        <div class="float-card card-source">{icon("alert",13)} Pede Pix · <b>urgência</b></div>
+        <div class="float-card card-plan"><div class="fc-label">{icon("shield",13)} PARECE COM</div>
+          <div class="match-name">Falso parente com número novo</div><div class="bar-row"><span>semelhança</span><i style="--w:86%"></i></div></div>
       </div></section>''')
 
 
