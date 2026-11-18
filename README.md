@@ -21,12 +21,13 @@ Abra **http://127.0.0.1:8501**. Também existe `iniciar.ps1`.
 
 Três camadas independentes, combinadas no resultado:
 
-1. **Regras locais** (`signals.py`): 10 padrões de alerta — pedido de Pix,
+1. **Regras locais** (`signals.py`): 11 padrões de alerta — pedido de Pix,
    código ou senha, link, urgência, troca de número, prêmio, taxa antecipada,
-   instalação de aplicativo, dados pessoais e nome de instituição — e 1 sinal
+   instalação de aplicativo, dados pessoais, nome de instituição e pendência
+   ou regularização — e 1 sinal
    de legitimidade (mandar usar o aplicativo oficial, sem link nem pedido de
    dados). Funcionam sem internet e geram uma pontuação de 0 a 100.
-2. **Catálogo de golpes + busca** (`catalog.py`, `retrieval.py`): 16 golpes
+2. **Catálogo de golpes + busca** (`catalog.py`, `retrieval.py`): 17 golpes
    frequentes no Brasil, com fontes. A mensagem é comparada a eles por TF-IDF
    e similaridade do cosseno; os 3 mais parecidos vão para a IA como contexto
    (padrão RAG).
@@ -63,18 +64,20 @@ pois é contado por modelo; erros de chave não trocam de modelo.
 & '.\.tools\python\python.exe' avaliar.py --local  # só regras locais
 ```
 
-O conjunto `avaliacao/mensagens.json` tem 22 golpes e 14 mensagens legítimas,
-fictícios e escritos a partir de alertas públicos, mais uma mensagem legítima
-real (aviso de fatura do Nubank) que gerou um alarme falso e foi corrigida.
+O conjunto `avaliacao/mensagens.json` tem 23 golpes e 15 mensagens legítimas,
+quase todos fictícios e escritos a partir de alertas públicos. Duas mensagens
+são reais, sem dados pessoais: um aviso de fatura do Nubank, que gerou um
+alarme falso, e um e-mail de falsa regularização do MEI, que recebeu só risco
+médio. Os dois erros foram corrigidos.
 Resultado em 18/11/2026 com `gemini-3.5-flash-lite` e modelos reserva:
 
 | | Só regras locais | Com IA |
 | --- | --- | --- |
-| Golpes detectados | 11/22 | 22/22 |
-| Tipo de golpe correto | 9/11 | 22/22 |
-| Alarmes falsos | 1/14 | 0/14 |
-| Acurácia | 24/36 | 36/36 |
-| Tempo médio | < 0,1 s | 5,4 s |
+| Golpes detectados | 12/23 | 23/23 |
+| Tipo de golpe correto | 10/12 | 23/23 |
+| Alarmes falsos | 1/15 | 0/15 |
+| Acurácia | 26/38 | 38/38 |
+| Tempo médio | < 0,1 s | 12,9 s |
 
 O conjunto é pequeno e foi escrito quase todo pelo próprio grupo: o resultado
 demonstra funcionamento, não desempenho garantido em mensagens reais.

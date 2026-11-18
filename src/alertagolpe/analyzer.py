@@ -12,7 +12,7 @@ from .providers import ProviderConfig, ProviderError, generate
 from .retrieval import DocumentIndex, SearchHit
 from .signals import Signal, detect, local_level, local_score
 
-PROMPT_VERSION = "alertagolpe-v2"
+PROMPT_VERSION = "alertagolpe-v3"
 # E-mails de golpe (falso boleto, falsa vaga) podem ser longos.
 MAX_MESSAGE_CHARS = 10000
 RISKS = ("alto", "medio", "baixo")
@@ -34,6 +34,10 @@ Sinais de legitimidade: manda usar o aplicativo ou site oficial por conta própr
 link; não pede senha, código, dados pessoais nem pagamento por fora.
 Sinais de golpe: link para "resolver"; pedido de senha, código, dados ou pagamento; pedido de
 instalar aplicativo; telefone como ÚNICA saída para uma "compra suspeita" ou "invasão".
+Também é golpe ("alto"): mensagem com aparência de aviso oficial (declaração, CPF, CNPJ, MEI,
+imposto) que fala em "pendência" e manda "regularizar" por link, mesmo que um rodapé diga que a
+empresa é privada e "sem vínculo" com o governo: serviços como a declaração do MEI são gratuitos
+no gov.br, e cobrar por eles imitando o aviso oficial é fraude.
 Se a mensagem só tem urgência e o nome da empresa, oferece o aplicativo oficial como caminho
 e não tem nenhum sinal de golpe, classifique como "baixo" e oriente a conferir pelo aplicativo.
 Um SMS que apenas ENTREGA um código de verificação e avisa para não compartilhá-lo é o próprio

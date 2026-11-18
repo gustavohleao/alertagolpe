@@ -14,12 +14,6 @@ from .settings import load_settings
 from .signals import RULES, alerts
 from .ui import brand, hero, html, icon, safe, section_heading
 
-EXAMPLES = {
-    "Falso parente": "Oi mãe, troquei de número, salva esse aqui. Tô precisando de uma ajuda urgente, consegue me fazer um Pix de R$ 1.200 hoje? O app do meu banco travou, amanhã te devolvo.",
-    "Falsa central": "BANCO: Compra de R$ 3.479,00 aprovada no seu cartão final 4410. Se não reconhece, ligue AGORA para a Central de Segurança 0800 591 2034 e informe o código que enviamos para cancelar.",
-    "Mensagem normal": "Oi! Passando pra lembrar que a reunião do grupo do trabalho de IA ficou para quinta às 19h, na biblioteca. Leva o notebook que vamos ensaiar a apresentação.",
-}
-
 RISK_UI = {
     "alto": ("alert", "RISCO ALTO", "Golpe muito provável", "high"),
     "medio": ("shield", "RISCO MÉDIO", "Suspeita: confirme antes de agir", "mid"),
@@ -54,11 +48,6 @@ def _ready_config(config: ProviderConfig) -> ProviderConfig:
         config = replace(config, model=model)
     config.validate()
     return config
-
-
-def _set_example(text: str) -> None:
-    st.session_state["message_input"] = text
-    st.session_state.pop("analysis", None)
 
 
 def _sidebar(config: ProviderConfig) -> None:
@@ -130,8 +119,8 @@ def _result(analysis) -> None:
                  '<div class="chips">' + ("".join(f'<span class="chip{" good" if s.peso < 0 else ""}">{safe(s.rotulo)}</span>' for s in analysis.signals) or '<span class="chip off">nenhum</span>') + "</div>"
                  '<p class="muted-note">Detectados por regras fixas, sem IA. Servem de segunda opinião.</p>')
         meta = f"{analysis.elapsed_seconds:.2f} s · {analysis.provider} · {analysis.model}" if analysis.used_ai else f"{analysis.elapsed_seconds:.2f} s · sem chamada de IA"
-    if analysis.fallback_from:
-        meta += f" · modelo reserva ({analysis.fallback_from} indisponível)"
+        if analysis.fallback_from:
+            meta += f" · modelo reserva ({analysis.fallback_from} indisponível)"
         html(f'<div class="consultation-meta">{icon("clock",13)} {safe(meta)}</div>')
         st.download_button("Baixar análise (.json)", json.dumps(analysis.export(), ensure_ascii=False, indent=2),
                            file_name="alertagolpe-analise.json", mime="application/json", icon=":material/download:", use_container_width=True)
@@ -142,10 +131,6 @@ def _analyze_tab(config: ProviderConfig, fallback_models: tuple[str, ...] = ()) 
         section_heading("01", "Cole a mensagem suspeita", "WhatsApp, SMS, e-mail ou post, até 10 mil caracteres. Pode colar exatamente como recebeu.")
         message = st.text_area("Mensagem", key="message_input", height=180, max_chars=MAX_MESSAGE_CHARS, label_visibility="collapsed",
                                placeholder="Ex.: Oi, troquei de número, consegue me fazer um Pix urgente?")
-        html('<div class="examples-label">OU TESTE COM UM EXEMPLO</div>')
-        with st.container(key="examples"):
-            for column, (label, text) in zip(st.columns(3), EXAMPLES.items()):
-                column.button(label, on_click=_set_example, args=(text,), use_container_width=True)
         submitted = st.button("Analisar mensagem", type="primary", use_container_width=True, icon=":material/shield:")
         st.caption("Ao analisar, a mensagem é enviada à API Gemini. Apague nomes, CPF, números de cartão e outros dados pessoais antes de colar.")
     if submitted:

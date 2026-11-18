@@ -187,18 +187,20 @@ class AppTests(unittest.TestCase):
         with patch.dict(os.environ, {"GEMINI_API_KEY": "fake", "LLM_MODEL": "teste"}), \
              patch("alertagolpe.analyzer.generate", return_value=reply(resumo=hostile)):
             app = self.app().run()
-            next(b for b in app.button if b.label == "Falso parente").click().run()
+            app.text_area(key="message_input").input(FALSO_PARENTE).run()
             next(b for b in app.button if b.label == "Analisar mensagem").click().run()
             self.assertFalse(app.exception)
             self.assertEqual(app.session_state["analysis"].risk, "alto")
             self.assertEqual(len(app.session_state["history"]), 1)
             self.assertFalse(any("exemplo.invalid" in m.value for m in app.markdown))
+            self.assertEqual(len(app.get("download_button")), 1)
+            self.assertFalse(any(b.label in ("Falso parente", "Falsa central", "Mensagem normal") for b in app.button))
 
     def test_without_key_runs_local_rules_only(self):
         with patch.dict(os.environ, {"GEMINI_API_KEY": "", "LLM_MODEL": ""}), \
              patch("alertagolpe.analyzer.generate") as gen:
             app = self.app().run()
-            next(b for b in app.button if b.label == "Falsa central").click().run()
+            app.text_area(key="message_input").input('BANCO: Compra de R$ 3.479,00 aprovada no seu cartão final 4410. Se não reconhece, ligue AGORA para a Central de Segurança 0800 591 2034 e informe o código que enviamos para cancelar.').run()
             next(b for b in app.button if b.label == "Analisar mensagem").click().run()
             self.assertFalse(app.exception)
             gen.assert_not_called()
@@ -207,7 +209,7 @@ class AppTests(unittest.TestCase):
     def test_clear_session_resets_history(self):
         with patch.dict(os.environ, {"GEMINI_API_KEY": "", "LLM_MODEL": ""}):
             app = self.app().run()
-            next(b for b in app.button if b.label == "Mensagem normal").click().run()
+            app.text_area(key="message_input").input('Oi! Passando pra lembrar que a reunião do grupo ficou para quinta às 19h, na biblioteca.').run()
             next(b for b in app.button if b.label == "Analisar mensagem").click().run()
             next(b for b in app.button if b.label == "Limpar sessão").click().run()
             self.assertFalse(app.exception)

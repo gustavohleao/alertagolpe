@@ -11,12 +11,13 @@
 > recebe o nível de risco, os sinais de alerta — sempre com o trecho exato da
 > mensagem —, o golpe conhecido com que ela mais se parece e o que fazer em
 > seguida. A análise combina três camadas: regras locais explicáveis, busca por
-> similaridade (TF-IDF e cosseno) em um catálogo de 16 golpes documentados por
+> similaridade (TF-IDF e cosseno) em um catálogo de 17 golpes documentados por
 > fontes públicas e um modelo generativo (API Gemini) que interpreta o conjunto
-> e explica o resultado em linguagem simples. Em um conjunto de avaliação com 22
-> golpes e 14 mensagens legítimas, as regras sozinhas detectaram 11 golpes; com
-> a IA e o catálogo, os 22 foram detectados, sem alarmes falsos — depois de
-> corrigir um alarme falso real em que o modelo inventou fatos sobre a mensagem.
+> e explica o resultado em linguagem simples. Em um conjunto de avaliação com 23
+> golpes e 15 mensagens legítimas, as regras sozinhas detectaram 12 golpes; com
+> a IA e o catálogo, os 23 foram detectados como risco alto, sem alarmes falsos —
+> depois de corrigir dois erros revelados por mensagens reais: um alarme falso em
+> que o modelo inventou fatos e um golpe que recebeu só risco médio.
 
 ---
 
@@ -49,7 +50,7 @@ em poucos segundos, obtém:
 | **Parece com** | O golpe do catálogo mais parecido, como ele funciona e as fontes |
 | **Sinais automáticos** | Uma segunda opinião por regras fixas, com pontuação de 0 a 100 |
 
-A aplicação também oferece um **catálogo navegável** dos 16 golpes, com sinais
+A aplicação também oferece um **catálogo navegável** dos 17 golpes, com sinais
 típicos, exemplo e orientações, e uma página que explica como a análise funciona.
 
 ### 1.3 Público e escopo
@@ -60,7 +61,7 @@ delimitado para manter a solução verificável:
 
 - Texto em português, colado pelo usuário (até 10.000 caracteres, o suficiente para e-mails longos). Capturas de
   tela, áudios e ligações não são analisados.
-- O catálogo cobre 16 golpes frequentes; golpes novos podem não estar nele.
+- O catálogo cobre 17 golpes frequentes; golpes novos podem não estar nele.
 - Nada é gravado em disco; o histórico existe apenas na sessão do navegador.
 - A análise é um apoio, não uma garantia. A orientação final é sempre
   confirmar pelo canal oficial.
@@ -106,7 +107,8 @@ flowchart LR
     D --> E[18/11 · Teste com<br/>mensagem real]
     E --> F{Alarme falso?}
     F -->|sim| G[18/11 · Correção e<br/>avaliação com 36 mensagens]
-    G --> H[18/11 · Relatório<br/>e apresentação]
+    G --> H[18/11 · Segundo teste real:<br/>golpe do MEI só médio]
+    H --> I[18/11 · Novo golpe no catálogo<br/>e avaliação com 38 mensagens]
 ```
 
 O AlertaGolpe foi desenvolvido em ciclos curtos de construir, medir e corrigir.
@@ -114,7 +116,10 @@ Primeiro vieram o catálogo de golpes e as regras locais; depois, a análise com
 o Gemini e a validação das respostas. A primeira avaliação (32 mensagens) foi
 seguida pelos modelos reserva, adicionados por causa da instabilidade do
 serviço, e pelo teste com mensagens reais, que revelou um alarme falso (seção
-4.1). A correção foi validada com o conjunto ampliado para 36 mensagens. O
+4.1). A correção foi validada com o conjunto ampliado para 36 mensagens. Um
+segundo teste real, com um e-mail de falsa regularização do MEI que recebeu só
+risco médio, levou a um novo golpe no catálogo e ao conjunto final de 38
+mensagens. O
 cliente da API Gemini, o motor de busca TF-IDF e a leitura de configuração
 partiram de módulos gerados anteriormente com assistência do Codex.
 
@@ -122,11 +127,12 @@ partiram de módulos gerados anteriormente com assistência do Codex.
 
 A análise combina três técnicas complementares:
 
-**1. Sistema baseado em regras (IA simbólica).** Dez regras de alerta, escritas como
+**1. Sistema baseado em regras (IA simbólica).** Onze regras de alerta, escritas como
 expressões regulares, identificam sinais recorrentes nos alertas públicos:
 pedido de código ou senha, troca de número, pedido de instalação de aplicativo,
 pedido de Pix, link, promessa de dinheiro fácil, taxa antecipada, urgência,
-pedido de dados pessoais e uso de nome de instituição. Uma décima primeira regra,
+pedido de dados pessoais, uso de nome de instituição e menção a pendência ou
+regularização. Uma décima segunda regra,
 de peso negativo, reconhece um sinal de legitimidade — a mensagem manda usar o
 aplicativo oficial — e só vale quando não há link nem pedido de código, Pix,
 dados ou taxa. Cada regra tem um peso;
@@ -154,7 +160,7 @@ flowchart LR
     UI --> AN[Análise<br/>analyzer.py]
     AN --> SG[Regras locais<br/>signals.py]
     AN --> IDX[Busca TF-IDF<br/>retrieval.py]
-    CAT[Catálogo de 16 golpes<br/>catalog.py] --> IDX
+    CAT[Catálogo de 17 golpes<br/>catalog.py] --> IDX
     AN --> GEM[Cliente Gemini<br/>providers.py]
     GEM -->|HTTPS| API[(API Gemini)]
     CFG[.env no servidor<br/>chave e modelo] --> GEM
@@ -192,12 +198,12 @@ A validação trata a resposta do modelo como entrada não confiável:
 
 ### 3.5 Catálogo de golpes
 
-Os 16 golpes foram selecionados a partir dos mais relatados pela Febraban e de
-alertas do Banco Central e da imprensa. Cada entrada traz nome, mecanismo,
+Os 17 golpes foram selecionados a partir dos mais relatados pela Febraban e de
+alertas do Banco Central, do Sebrae e da imprensa. Cada entrada traz nome, mecanismo,
 sinais típicos, uma mensagem de exemplo fictícia, o que fazer e as fontes. O
 texto de cada entrada (nome + mecanismo + sinais + exemplo) forma o documento
 indexado pela busca. Como verificação de consistência, a mensagem de exemplo de
-cada golpe recupera o próprio golpe em primeiro lugar nos 16 casos.
+cada golpe recupera o próprio golpe em primeiro lugar nos 17 casos.
 
 ### 3.6 Prompts
 
@@ -248,12 +254,13 @@ testes são simuladas; o desempenho real é medido na seção 4.
 
 ### 4.1 Avaliação
 
-**Método.** O conjunto `avaliacao/mensagens.json` tem **22 golpes**, cobrindo
-os 16 tipos do catálogo, e **14 mensagens legítimas** — incluindo casos
+**Método.** O conjunto `avaliacao/mensagens.json` tem **23 golpes**, cobrindo
+os 17 tipos do catálogo, e **15 mensagens legítimas** — incluindo casos
 difíceis que citam banco, Pix, código de verificação, entrega e bloqueio de
 cartão. As mensagens são fictícias, escritas a partir dos padrões descritos em
-alertas públicos e diferentes dos exemplos do catálogo, exceto uma legítima
-**real**, recebida por um integrante (L13, descrita abaixo). O script `avaliar.py` executa o conjunto
+alertas públicos e diferentes dos exemplos do catálogo, exceto duas **reais**,
+recebidas por integrantes e incluídas sem dados pessoais: uma legítima (L13) e
+um golpe (S23), descritas abaixo. O script `avaliar.py` executa o conjunto
 em dois modos e salva o resultado de cada mensagem em
 `output/avaliacao-resultados.json`. "Detectado" significa risco alto ou médio.
 
@@ -261,15 +268,18 @@ em dois modos e salva o resultado de cada mensagem em
 
 | Métrica | Só regras locais | Regras + catálogo + IA |
 | --- | --- | --- |
-| Golpes detectados | 11/22 | **22/22** |
-| Golpes classificados como risco alto | 0/22 | **22/22** |
-| Tipo de golpe correto (entre os detectados) | 9/11 | **22/22** |
-| Alarmes falsos em mensagens legítimas | 1/14 | **0/14** |
-| Acurácia total | 24/36 | **36/36** |
-| Tempo médio por mensagem | < 0,1 s | 5,4 s (máx. 50,8 s, com troca para o modelo reserva) |
+| Golpes detectados | 12/23 | **23/23** |
+| Golpes classificados como risco alto | 0/23 | **23/23** |
+| Tipo de golpe correto (entre os detectados) | 10/12 | **23/23** |
+| Alarmes falsos em mensagens legítimas | 1/15 | **0/15** |
+| Acurácia total | 26/38 | **38/38** |
+| Tempo médio por mensagem | < 0,1 s | 12,9 s (máx. 49,8 s, com troca para o modelo reserva) |
 
 Na primeira avaliação (17/11, 32 mensagens), o resultado foi 21/32 com regras e
-32/32 com IA; o conjunto foi ampliado depois do teste real descrito abaixo.
+32/32 com IA; depois do primeiro teste real, com 36 mensagens, 24/36 e 36/36.
+O conjunto foi ampliado a cada teste real descrito abaixo. O tempo médio subiu
+de 5,4 s para 12,9 s entre as duas últimas rodadas, por mais trocas para o
+modelo reserva (limite por minuto), não por mudança no app.
 
 **Análise.**
 
@@ -312,6 +322,25 @@ mesmo resultado em 5 de 5 execuções. Os exemplos do prompt são genéricos, ma
 foram inspirados no tipo de mensagem que causou o erro; isso favorece esses casos
 na avaliação e é uma limitação a considerar.
 
+**Golpe que recebeu só risco médio no segundo teste real.** Um integrante
+recebeu um e-mail intitulado "DECLARAÇÃO 2025 — Resolva a pendência da sua
+declaração anual", com seu nome e o CNPJ do seu MEI, e um botão "REGULARIZAR"
+que levava a um site privado. Só um rodapé em letra pequena dizia que a empresa
+era uma "assessoria privada, sem vínculo com a Receita Federal". A declaração
+anual do MEI é gratuita no gov.br, e o Sebrae alerta para e-mails de
+"regularização" nessa época. O app deu **risco médio**: as regras só pegaram o
+link e o nome de instituição, e nenhum golpe do catálogo descrevia o padrão. A
+correção teve três partes: (1) um novo golpe no catálogo (G17, falsa
+regularização do MEI, com fontes do Sebrae e do gov.br); (2) uma regra local de
+"pendência ou regularização"; (3) uma linha no prompt (versão `alertagolpe-v3`)
+dizendo que aparência de aviso oficial com "pendência" e link para "regularizar"
+é golpe, mesmo com o rodapé "sem vínculo". Entraram no conjunto o e-mail, sem o
+nome e o CNPJ do integrante e da empresa (S23), e um lembrete legítimo do prazo
+da declaração (L15), para conferir que avisos verdadeiros sobre o MEI continuam
+"baixo". Na primeira rodada após a mudança, um golpe antigo de falsa Receita
+Federal (S17, "pendência no CPF") passou a ser associado ao golpe novo; o G17
+foi restrito ao MEI e ao CNPJ, e a rodada final acertou o tipo nos 23 golpes.
+
 **Testes preliminares** com mensagens avulsas confirmaram o comportamento: o
 falso filho pedindo Pix foi classificado como alto (golpe G01, 5,7 s); uma
 confirmação de consulta odontológica, como baixo, sem alarme (9,1 s); uma falsa
@@ -321,9 +350,9 @@ governo terminam em `.gov.br` (1,6 s).
 **Limites da avaliação.** O conjunto é pequeno e foi escrito pelo próprio grupo,
 com assistência de IA, a partir dos mesmos padrões usados no catálogo: o
 resultado perfeito demonstra funcionamento e coerência, **não** um desempenho
-garantido em mensagens reais, que são mais variadas e ambíguas. A única
-mensagem real incluída (L13) revelou justamente um erro que o conjunto fictício
-não mostrava; ampliar o teste com mensagens reais é o principal passo para medir
+garantido em mensagens reais, que são mais variadas e ambíguas. As duas
+mensagens reais incluídas (L13 e S23) revelaram justamente erros que o conjunto
+fictício não mostrava; ampliar o teste com mensagens reais é o principal passo para medir
 o desempenho fora do laboratório.
 
 ### 4.2 Análise de cada ferramenta
@@ -372,7 +401,7 @@ reconhecer o próximo golpe sozinha.
 - **Falso negativo é o erro mais grave:** um "risco baixo" errado pode dar falsa
   segurança. Por isso o resultado baixo também orienta a confirmar pelo canal
   oficial.
-- **Cobertura:** 16 golpes; variações novas dependem só do modelo.
+- **Cobertura:** 17 golpes; variações novas dependem só do modelo.
 - **Formato:** analisa apenas texto; golpes chegam também como imagem, áudio e
   ligação.
 - **Dependência do provedor:** sem a API, restam as regras, que detectaram
@@ -385,7 +414,7 @@ reconhecer o próximo golpe sozinha.
 
 1. **Combinar técnicas é melhor do que escolher uma.** Regras são rápidas e
    explicáveis, mas rígidas; o modelo é flexível, mas precisa ser verificado. A
-   avaliação mostrou o ganho da combinação (24/36 para 36/36).
+   avaliação mostrou o ganho da combinação (26/38 para 38/38).
 2. **A saída do modelo é entrada não confiável.** Exigir trechos exatos e
    validar cada campo impediu que erros do modelo chegassem ao usuário.
 3. **Falhas transitórias são a regra em serviços de IA.** Erros 503 e JSON
@@ -493,6 +522,11 @@ foi tão importante quanto o próprio modelo para tornar o resultado confiável.
 - Os 10 golpes financeiros mais comuns no Brasil (Canaltech):
   https://canaltech.com.br/seguranca/estes-sao-os-10-golpes-financeiros-mais-comuns-no-brasil/
 - Banco Central — Sistema de Valores a Receber: https://valoresareceber.bcb.gov.br/
+- Não caia em golpe: conheça as cobranças falsas em alta contra o MEI (Agência
+  Sebrae, abr. 2025):
+  https://agenciasebrae.com.br/cultura-empreendedora/nao-caia-em-golpe-conheca-as-cobrancas-falsas-em-alta-contra-o-mei
+- Declarar receita bruta anual para o MEI (DASN-Simei) — gov.br:
+  https://www.gov.br/pt-br/servicos/declarar-receita-bruta-anual-para-o-mei
 - scikit-learn — TF-IDF:
   https://scikit-learn.org/stable/modules/feature_extraction.html#text-feature-extraction
 - scikit-learn — similaridade do cosseno:
@@ -507,7 +541,7 @@ As demais fontes de cada golpe estão em `src/alertagolpe/catalog.py`.
 
 ## Apêndice A — Prompt
 
-### A.1 Instrução de sistema (`analyzer.py`, versão `alertagolpe-v2`)
+### A.1 Instrução de sistema (`analyzer.py`, versão `alertagolpe-v3`)
 
 ```text
 Você é o AlertaGolpe, um analista de segurança que ajuda pessoas comuns
@@ -527,6 +561,10 @@ Sinais de legitimidade: manda usar o aplicativo ou site oficial por conta própr
 link; não pede senha, código, dados pessoais nem pagamento por fora.
 Sinais de golpe: link para "resolver"; pedido de senha, código, dados ou pagamento; pedido de
 instalar aplicativo; telefone como ÚNICA saída para uma "compra suspeita" ou "invasão".
+Também é golpe ("alto"): mensagem com aparência de aviso oficial (declaração, CPF, CNPJ, MEI,
+imposto) que fala em "pendência" e manda "regularizar" por link, mesmo que um rodapé diga que a
+empresa é privada e "sem vínculo" com o governo: serviços como a declaração do MEI são gratuitos
+no gov.br, e cobrar por eles imitando o aviso oficial é fraude.
 Se a mensagem só tem urgência e o nome da empresa, oferece o aplicativo oficial como caminho
 e não tem nenhum sinal de golpe, classifique como "baixo" e oriente a conferir pelo aplicativo.
 Um SMS que apenas ENTREGA um código de verificação e avisa para não compartilhá-lo é o próprio
@@ -575,7 +613,8 @@ se o modelo seguir indisponível (5xx, 429, tempo esgotado ou 404), os modelos r
 | Cobra taxa para liberar algo | 20 | "pague a taxa para liberar o prêmio" |
 | Cria urgência ou ameaça | 15 | "ainda hoje", "bloqueado" |
 | Pede dados pessoais ou do cartão | 15 | "informe seu CPF" |
-| Usa nome de banco, empresa ou órgão público | 10 | "Receita Federal" |
+| Usa nome de banco, empresa ou órgão público | 10 | "Receita Federal", "MEI" |
+| Fala em pendência ou regularização | 15 | "resolva a pendência" |
 | Orienta usar o aplicativo ou canal oficial (sinal de legitimidade) | −15 | "acessando o app"; anulada se houver link ou pedido de código, Pix, dados ou taxa |
 
 Nível local: alto ≥ 55 pontos; médio ≥ 25; baixo abaixo de 25.

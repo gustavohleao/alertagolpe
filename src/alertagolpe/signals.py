@@ -58,7 +58,10 @@ RULES: tuple[Rule, ...] = (
          re.compile(r"\b(cpf|dados do cart[aã]o|n[uú]mero do cart[aã]o|data de nascimento)\b", _I)),
     Rule("instituicao", "Usa o nome de banco, empresa ou órgão público",
          "Golpistas se passam por instituições conhecidas para ganhar confiança.", 10,
-         re.compile(r"\b(banco central|banco|central de (?:seguran[cç]a|atendimento)|receita federal|correios|inss|gov\.br|serasa|caixa|nubank|ita[uú]|bradesco|santander)\b", _I)),
+         re.compile(r"\b(banco central|banco|central de (?:seguran[cç]a|atendimento)|receita federal|receita|correios|inss|gov\.br|mei|cnpj|serasa|caixa|nubank|ita[uú]|bradesco|santander)\b", _I)),
+    Rule("pendencia", "Fala em pendência ou regularização",
+         "Avisos de 'pendência' com link para 'regularizar' são isca comum de golpes com nome de órgão público.", 15,
+         re.compile(r"\b(pend[eê]ncias?|irregularidades?|irregular|regularizar|regulariza[cç][aã]o)\b", _I)),
     # Sinal de legitimidade (peso negativo): só vale quando a mensagem não tem link.
     Rule("canal_oficial", "Orienta usar o aplicativo ou canal oficial",
          "Mandar a pessoa ao aplicativo oficial, sem link, é típico de avisos legítimos.", -15,

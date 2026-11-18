@@ -206,6 +206,13 @@
       "texto": "Nubank: seu cartão será bloqueado hoje por falta de atualização. Resolva acessando o app pelo link nubank-regulariza.site e confirme seus dados."
     },
     {
+      "id": "S23",
+      "rotulo": "golpe",
+      "golpe": "G17",
+      "real": true,
+      "texto": "DECLARAÇÃO 2025\nResolva a pendência da sua declaração anual\n\nOlá, 12.345.678 JOÃO DA SILVA.\n\nA declaração anual do MEI referente a 2025 ainda requer atenção.\n\nDeixar a obrigação para depois pode prolongar uma pendência que já pode ser resolvida. A transmissão continua disponível mesmo após o encerramento do prazo regular.\n\nConsulte as informações e faça a regularização de forma online.\n\nCNPJ: 12345678000190\n\nREGULARIZAR: https://assessoriamei.com.br/declaracao/12345678000190\n\nCaso você já tenha regularizado a declaração, desconsidere este e-mail.\n\nASSESSORIA MEI\nAssessoria privada e independente, sem vínculo com a Receita Federal, Portal do Empreendedor ou qualquer órgão governamental.\nNão deseja mais receber nossos e-mails? Clique aqui para se descadastrar."
+    },
+    {
       "id": "L13",
       "rotulo": "legitima",
       "golpe": null,
@@ -217,6 +224,12 @@
       "rotulo": "legitima",
       "golpe": null,
       "texto": "Itaú: sua fatura de novembro vence amanhã. Evite juros e o bloqueio do cartão pagando pelo app ou internet banking."
+    },
+    {
+      "id": "L15",
+      "rotulo": "legitima",
+      "golpe": null,
+      "texto": "Sebrae: o prazo da Declaração Anual do MEI vai até 31 de maio. A declaração é gratuita e você mesmo pode fazer no Portal do Empreendedor ou no app MEI. Se tiver dúvida, procure a Sala do Empreendedor da sua cidade."
     }
   ]
 }

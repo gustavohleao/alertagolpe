@@ -83,7 +83,7 @@ def hero() -> None:
       <div class="hero-copy"><div class="eyebrow"><span class="pulse"></span> DETECTOR DE GOLPES COM IA</div>
       <h1 id="hero-title">Recebeu uma mensagem estranha?<br><em>Confira antes de clicar.</em></h1>
       <p>Cole a mensagem de WhatsApp, SMS ou e-mail. O AlertaGolpe mostra os sinais de alerta, com qual golpe conhecido ela se parece e o que fazer agora.</p>
-      <div class="hero-chips"><span>{icon("alert",15)} Sinais explicados</span><span>{icon("book",15)} 16 golpes catalogados</span><span>{icon("check",15)} O que fazer agora</span></div></div>
+      <div class="hero-chips"><span>{icon("alert",15)} Sinais explicados</span><span>{icon("book",15)} 17 golpes catalogados</span><span>{icon("check",15)} O que fazer agora</span></div></div>
       <div class="hero-visual" aria-hidden="true">
         <div class="float-card card-chat"><div class="fc-label">{icon("chat",13)} MENSAGEM RECEBIDA</div>
           <div class="chat-bubble">Oi mãe, troquei de número 😅 consegue me fazer um <mark>Pix urgente</mark>?</div></div>

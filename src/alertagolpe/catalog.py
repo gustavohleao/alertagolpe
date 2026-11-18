@@ -18,6 +18,8 @@ WHATSAPP = "https://consumidormoderno.com.br/golpe-whatsapp-saiba-proteger/"
 SERASA = "https://www.serasa.com.br/guias/como-proteger-meu-cpf-de-fraudes/"
 BCB_SVR = "https://valoresareceber.bcb.gov.br/"
 SVR_GOLPE = "https://olhardigital.com.br/2023/07/06/seguranca/cuidado-golpes-envolvendo-dinheiro-esquecido-voltam-a-acontecer/"
+SEBRAE_MEI = "https://agenciasebrae.com.br/cultura-empreendedora/nao-caia-em-golpe-conheca-as-cobrancas-falsas-em-alta-contra-o-mei"
+GOV_DASN = "https://www.gov.br/pt-br/servicos/declarar-receita-bruta-anual-para-o-mei"
 PIX_ERRADO = "https://www.opovo.com.br/noticias/economia/2024/07/11/amp/entenda-o-golpe-do-pix-errado-e-saiba-como-nao-ser-enganado.html"
 
 
@@ -132,6 +134,12 @@ CATALOG: tuple[Scam, ...] = (
          "Seu cartão foi clonado. Um funcionário do banco vai até a sua casa hoje retirar o cartão para perícia. Corte ao meio, sem danificar o chip, e entregue com a senha anotada.",
          ("O banco nunca busca cartão na sua casa nem pede a senha.", "Não aceite ajuda de estranhos no caixa eletrônico.", "Confira o valor e o próprio cartão ao pagar em maquininhas."),
          (FEBRABAN_TOP, CANALTECH_10)),
+    Scam("G17", "Falsa regularização do MEI (assessoria ou guia falsa)",
+         "E-mail ou WhatsApp com cara de aviso oficial diz que a declaração anual do MEI ou o CNPJ tem 'pendência' e manda 'regularizar' por um link. O site cobra por um serviço que o governo oferece de graça, ou emite guia falsa; às vezes um rodapé em letra pequena diz que a empresa não tem vínculo com a Receita.",
+         ("Fala em pendência, irregularidade ou regularização", "Microempreendedor (MEI), declaração anual ou CNPJ", "Link para um site que não é gov.br", "Usa o nome e o CNPJ da empresa da vítima para parecer oficial", "Assessoria privada 'sem vínculo' com o governo"),
+         "DECLARAÇÃO ANUAL: seu MEI possui pendência junto à Receita. Evite multa e o cancelamento do CNPJ. Clique em REGULARIZAR e conclua online: mei-regulariza.com.br",
+         ("A declaração anual do MEI é gratuita e feita só no Portal do Empreendedor (gov.br) ou no app MEI.", "Consulte pendências digitando gov.br/mei você mesmo, sem clicar no link.", "Não pague assessorias para um serviço gratuito."),
+         (SEBRAE_MEI, GOV_DASN)),
 )
 
 BY_ID = {scam.id: scam for scam in CATALOG}
