@@ -3,7 +3,7 @@
 **Projeto Prático — IA Generativa · Parte 1**  
 **Entrega:** 19 de novembro de 2026  
 **Grupo:** Gustavo Henrique Leão, Otavio Aparecido Pegorin, Leonardo Gabriel Lopes, Felipe Gabriel Tagliabues e Murilo Rodrigues Lima  
-**Repositório:** https://github.com/gustavohleao/estudapdf  
+**Repositório:** https://github.com/gustavohleao/alertagolpe  
 **Versão do relatório:** 18/11/2026
 
 > **Resumo.** O AlertaGolpe ajuda pessoas comuns a reconhecer golpes em
