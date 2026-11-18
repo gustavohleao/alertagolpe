@@ -27,6 +27,7 @@ class SettingsTests(unittest.TestCase):
                 "LLM_PROVIDER": "gemini",
                 "GEMINI_API_KEY": "",
                 "LLM_MODEL": "",
+                "LLM_FALLBACK_MODELS": "gemini-3.1-flash-lite,gemini-flash-lite-latest",
                 "OLLAMA_BASE_URL": "http://localhost:11434",
                 "OLLAMA_MODEL": "",
                 "LLM_TIMEOUT_SECONDS": "90",
@@ -85,7 +86,7 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(settings["LLM_MODEL"], "")
         self.assertNotIn("UNKNOWN_SETTING", settings)
         self.assertNotIn("ANOTHER_UNKNOWN", settings)
-        self.assertEqual(len(settings), 6)
+        self.assertEqual(len(settings), 7)
 
     def test_explicit_none_value_maps_to_empty(self):
         self.write_env("GEMINI_API_KEY=chave-ficticia-arquivo\n")

@@ -10,7 +10,16 @@ import httpx
 
 
 class ProviderError(RuntimeError):
-    """Erro público sem chave, URL autenticada ou corpo de resposta privado."""
+    """Erro público sem chave, URL autenticada ou corpo de resposta privado.
+
+    ``model_unavailable`` indica que o problema é do modelo naquele momento
+    (sobrecarga, tempo esgotado ou modelo inexistente): outro modelo pode
+    funcionar. Chave, cota e parâmetros inválidos não se resolvem trocando de modelo.
+    """
+
+    def __init__(self, message: str, *, model_unavailable: bool = False):
+        super().__init__(message)
+        self.model_unavailable = model_unavailable
 
 
 def _normalize_api_key(value: str, *, missing_message: str = "Configure a chave Gemini localmente para gerar respostas.") -> str:
@@ -94,7 +103,7 @@ def _request(client: httpx.Client, method: str, url: str, *, sleep=None, **kwarg
             attempt += 1
         response.raise_for_status()
     except httpx.TimeoutException:
-        raise ProviderError("O modelo excedeu o tempo de espera. Nenhuma resposta foi substituída.") from None
+        raise ProviderError("O modelo excedeu o tempo de espera. Nenhuma resposta foi substituída.", model_unavailable=True) from None
     except httpx.HTTPStatusError as exc:
         code = exc.response.status_code
         messages = {
@@ -104,7 +113,8 @@ def _request(client: httpx.Client, method: str, url: str, *, sleep=None, **kwarg
             404: "Modelo ou serviço não encontrado. Confira o identificador e o provedor.",
             429: "Limite de uso ou cota atingido. Confira sua conta antes de tentar novamente.",
         }
-        raise ProviderError(messages.get(code, f"Serviço indisponível (HTTP {code}). Tente novamente mais tarde.")) from None
+        raise ProviderError(messages.get(code, f"Serviço indisponível (HTTP {code}). Tente novamente mais tarde."),
+                            model_unavailable=code == 404 or code >= 500) from None
     except (httpx.RequestError, httpx.InvalidURL):
         raise ProviderError("Não foi possível conectar ao provedor. Confira a conexão e se o serviço está ativo.") from None
     try:

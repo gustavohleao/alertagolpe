@@ -27,6 +27,10 @@ RISK_UI = {
 }
 
 
+def _fallback_models(settings: dict[str, str]) -> tuple[str, ...]:
+    return tuple(m.strip() for m in settings.get("LLM_FALLBACK_MODELS", "").split(",") if m.strip())
+
+
 def _env_timeout(settings: dict[str, str]) -> int:
     try:
         return max(5, min(300, int(settings.get("LLM_TIMEOUT_SECONDS") or "90")))
@@ -126,12 +130,14 @@ def _result(analysis) -> None:
                  '<div class="chips">' + ("".join(f'<span class="chip">{safe(s.rotulo)}</span>' for s in analysis.signals) or '<span class="chip off">nenhum</span>') + "</div>"
                  '<p class="muted-note">Detectados por regras fixas, sem IA. Servem de segunda opinião.</p>')
         meta = f"{analysis.elapsed_seconds:.2f} s · {analysis.provider} · {analysis.model}" if analysis.used_ai else f"{analysis.elapsed_seconds:.2f} s · sem chamada de IA"
+    if analysis.fallback_from:
+        meta += f" · modelo reserva ({analysis.fallback_from} indisponível)"
         html(f'<div class="consultation-meta">{icon("clock",13)} {safe(meta)}</div>')
         st.download_button("Baixar análise (.json)", json.dumps(analysis.export(), ensure_ascii=False, indent=2),
                            file_name="alertagolpe-analise.json", mime="application/json", icon=":material/download:", use_container_width=True)
 
 
-def _analyze_tab(config: ProviderConfig) -> None:
+def _analyze_tab(config: ProviderConfig, fallback_models: tuple[str, ...] = ()) -> None:
     with st.container(key="composer"):
         section_heading("01", "Cole a mensagem suspeita", "WhatsApp, SMS, e-mail ou post. Pode colar exatamente como recebeu.")
         message = st.text_area("Mensagem", key="message_input", height=150, max_chars=MAX_MESSAGE_CHARS, label_visibility="collapsed",
@@ -147,7 +153,7 @@ def _analyze_tab(config: ProviderConfig) -> None:
         try:
             active = _ready_config(config) if config.api_key else None
             with st.spinner("Procurando sinais de golpe…"):
-                analysis = analyze(message, active)
+                analysis = analyze(message, active, fallback_models)
             st.session_state["analysis"] = analysis
             history = st.session_state.setdefault("history", [])
             history.append({"risk": analysis.risk, "preview": " ".join(analysis.message.split())[:46] + "…"})
@@ -196,7 +202,7 @@ def render_app(root: Path) -> None:
     hero()
     analyze_tab, catalog_tab, about_tab = st.tabs([":material/shield: Analisar mensagem", ":material/menu_book: Golpes conhecidos", ":material/info: Como funciona"])
     with analyze_tab:
-        _analyze_tab(config)
+        _analyze_tab(config, _fallback_models(settings))
     with catalog_tab:
         _catalog_tab()
     with about_tab:

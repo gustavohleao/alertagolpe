@@ -46,11 +46,15 @@ Copie `.env.example` para `.env` e preencha:
 ```
 GEMINI_API_KEY=sua-chave
 LLM_MODEL=gemini-3.5-flash-lite
+LLM_FALLBACK_MODELS=gemini-3.1-flash-lite,gemini-flash-lite-latest
 ```
 
 A chave fica só no servidor: não aparece na interface, nos downloads nem no
 repositório. Erros temporários do Gemini (HTTP 5xx) são repetidos até três
-vezes; uma resposta em JSON quebrado é pedida de novo uma vez.
+vezes; uma resposta em JSON quebrado é pedida de novo uma vez. Se o modelo
+principal continuar sobrecarregado ou deixar de existir, o app tenta os
+modelos reserva de `LLM_FALLBACK_MODELS`, em ordem, e mostra na tela qual
+modelo respondeu. Erros de chave ou de cota não trocam de modelo.
 
 ## Avaliação
 
@@ -80,7 +84,7 @@ funcionamento, não desempenho garantido em mensagens reais.
 & '.\.tools\python\python.exe' -m unittest discover -s tests
 ```
 
-49 testes automatizados (regras, catálogo, busca, validação da resposta da IA,
+54 testes automatizados (regras, catálogo, busca, validação da resposta da IA,
 cliente HTTP e interface). As respostas da IA nos testes são simuladas.
 
 ## Limites e privacidade

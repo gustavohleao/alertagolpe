@@ -1,6 +1,6 @@
 """Análise de uma mensagem suspeita: regras locais + busca no catálogo + Gemini."""
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime, timezone
 import json
 import re
@@ -8,7 +8,7 @@ import unicodedata
 from time import perf_counter
 
 from .catalog import BY_ID, catalog_chunks
-from .providers import ProviderConfig, generate
+from .providers import ProviderConfig, ProviderError, generate
 from .retrieval import DocumentIndex, SearchHit
 from .signals import Signal, detect, local_level, local_score
 
@@ -60,6 +60,7 @@ class Analysis:
     provider: str = "nenhum"
     model: str = ""
     discarded_findings: int = 0
+    fallback_from: str = ""
     prompt: str = ""
     raw_output: str = ""
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
@@ -90,6 +91,7 @@ class Analysis:
             "provider": self.provider,
             "model": self.model,
             "sinais_descartados": self.discarded_findings,
+            "modelo_reserva_no_lugar_de": self.fallback_from,
             "elapsed_seconds": self.elapsed_seconds,
             "created_at": self.created_at,
             "sistema_prompt": SYSTEM_PROMPT if self.used_ai else "",
@@ -135,7 +137,26 @@ def _local_only(message, signals, score, hits, started) -> Analysis:
                     round(perf_counter() - started, 3))
 
 
-def analyze(message: str, config: ProviderConfig | None) -> Analysis:
+def _generate_with_fallback(prompt: str, config: ProviderConfig, fallback_models: tuple[str, ...]):
+    """Tenta o modelo principal e, se ele estiver indisponível, os reservas em ordem.
+
+    Só troca de modelo para sobrecarga, tempo esgotado ou modelo inexistente;
+    erros de chave, cota ou parâmetros são devolvidos na hora.
+    """
+    models = list(dict.fromkeys([config.model, *fallback_models]))
+    for position, model in enumerate(models):
+        attempt_config = replace(config, model=model)
+        try:
+            return generate(SYSTEM_PROMPT, prompt, attempt_config, json_output=True), attempt_config
+        except ProviderError as exc:
+            if not exc.model_unavailable or position == len(models) - 1:
+                if position:
+                    raise ProviderError(f"{exc} Os modelos reserva também estavam indisponíveis.",
+                                        model_unavailable=exc.model_unavailable) from None
+                raise
+
+
+def analyze(message: str, config: ProviderConfig | None, fallback_models: tuple[str, ...] = ()) -> Analysis:
     if not isinstance(message, str) or not message.strip():
         raise AnalysisError("Cole a mensagem que você quer analisar.")
     message = message.strip()
@@ -169,8 +190,9 @@ DADOS:
 """ + json.dumps(payload, ensure_ascii=False)
     # Mesmo no modo JSON, o modelo devolveu raramente um JSON quebrado na avaliação
     # (2 de 30). Uma única nova tentativa resolve; as demais validações não são repetidas.
+    primary_model = config.model
     for attempt in range(2):
-        generation = generate(SYSTEM_PROMPT, prompt, config, json_output=True)
+        generation, config = _generate_with_fallback(prompt, config, fallback_models)
         try:
             data = _json(generation.text)
             break
@@ -204,4 +226,5 @@ DADOS:
             discarded += 1
     return Analysis(message, risk, _text(data.get("resumo")), scam_id, findings,
                     [_text(a, 300) for a in actions], signals, score, hits, True,
-                    round(perf_counter() - started, 3), config.provider, config.model, discarded, prompt, generation.text)
+                    round(perf_counter() - started, 3), config.provider, config.model, discarded,
+                    primary_model if config.model != primary_model else "", prompt, generation.text)

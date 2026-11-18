@@ -13,6 +13,8 @@ _DEFAULTS = {
     "LLM_PROVIDER": "gemini",
     "GEMINI_API_KEY": "",
     "LLM_MODEL": "",
+    # Modelos tentados, em ordem, se o principal estiver sobrecarregado ou indisponível.
+    "LLM_FALLBACK_MODELS": "gemini-3.1-flash-lite,gemini-flash-lite-latest",
     "OLLAMA_BASE_URL": "http://localhost:11434",
     "OLLAMA_MODEL": "",
     "LLM_TIMEOUT_SECONDS": "90",

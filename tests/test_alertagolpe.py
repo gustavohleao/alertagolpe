@@ -100,6 +100,37 @@ class AnalyzerTests(unittest.TestCase):
             analyze(FALSO_PARENTE, CONFIG)
 
     @patch("alertagolpe.analyzer.generate")
+    def test_unavailable_model_falls_back_to_reserve(self, gen):
+        from alertagolpe.providers import ProviderError
+        gen.side_effect = [ProviderError("Serviço indisponível (HTTP 503).", model_unavailable=True), reply()]
+        result = analyze(FALSO_PARENTE, CONFIG, ("reserva-1", "reserva-2"))
+        self.assertEqual([c.args[2].model for c in gen.call_args_list], ["teste", "reserva-1"])
+        self.assertEqual((result.model, result.fallback_from), ("reserva-1", "teste"))
+        self.assertEqual(result.export()["modelo_reserva_no_lugar_de"], "teste")
+
+    @patch("alertagolpe.analyzer.generate")
+    def test_key_or_quota_errors_do_not_fall_back(self, gen):
+        from alertagolpe.providers import ProviderError
+        gen.side_effect = ProviderError("Limite de uso ou cota atingido.", model_unavailable=False)
+        with self.assertRaisesRegex(ProviderError, "cota"):
+            analyze(FALSO_PARENTE, CONFIG, ("reserva-1",))
+        self.assertEqual(gen.call_count, 1)
+
+    @patch("alertagolpe.analyzer.generate")
+    def test_all_models_unavailable_gives_clear_error(self, gen):
+        from alertagolpe.providers import ProviderError
+        gen.side_effect = ProviderError("Serviço indisponível (HTTP 503).", model_unavailable=True)
+        with self.assertRaisesRegex(ProviderError, "reserva também"):
+            analyze(FALSO_PARENTE, CONFIG, ("reserva-1", "reserva-2"))
+        self.assertEqual(gen.call_count, 3)
+
+    @patch("alertagolpe.analyzer.generate")
+    def test_primary_success_uses_no_reserve(self, gen):
+        gen.return_value = reply()
+        result = analyze(FALSO_PARENTE, CONFIG, ("reserva-1",))
+        self.assertEqual((gen.call_count, result.fallback_from), (1, ""))
+
+    @patch("alertagolpe.analyzer.generate")
     def test_broken_json_is_retried_once(self, gen):
         gen.side_effect = [Generation("{quebrado", "teste", 0.1, {}), reply()]
         self.assertEqual(analyze(FALSO_PARENTE, CONFIG).risk, "alto")

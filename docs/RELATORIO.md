@@ -173,7 +173,7 @@ flowchart TD
     B --> D{Chave da API configurada?}
     C --> D
     D -->|não| E[Resultado só com regras<br/>identificado como sem IA]
-    D -->|sim| F[Gemini em modo JSON:<br/>risco, sinais, golpe, ações]
+    D -->|sim| F[Gemini em modo JSON:<br/>risco, sinais, golpe, ações<br/>modelo reserva se indisponível]
     F --> G{Validação}
     G -->|JSON quebrado| H[Pede de novo uma vez]
     H --> G
@@ -226,16 +226,17 @@ O prompt completo está no Apêndice A. Princípios:
 | Modo JSON da API | Na primeira versão do projeto, pedir JSON só no texto do prompt falhou em 2 de 5 respostas |
 | Uma nova tentativa para JSON quebrado | Mesmo no modo JSON, 2 de 32 respostas vieram inválidas na primeira avaliação; com uma nova tentativa, 0 de 32 |
 | Novas tentativas para erros 5xx | Erros 503 do Gemini foram frequentes durante o desenvolvimento |
+| Modelos reserva automáticos | Se o principal continuar sobrecarregado ou deixar de existir (como ocorreu com um modelo antigo), o app tenta `gemini-3.1-flash-lite` e depois `gemini-flash-lite-latest`, escolhidos por um teste de disponibilidade em 18/11 (respostas em 0,6 a 2,9 s); erros de chave ou cota não trocam de modelo. Em teste real com o principal indisponível, o reserva respondeu corretamente em 8,3 s |
 | Sinais com trecho exato | Impede que o modelo atribua à mensagem algo que ela não diz |
 | Aviso de envio à API na tela | A mensagem pode conter dados pessoais; o usuário é avisado antes de enviar |
 | Modo sem IA | Sem chave, a aplicação continua útil, com as regras e o catálogo |
 
 ### 3.8 Testes automatizados
 
-A aplicação tem **49 testes automatizados** (`python -m unittest`): integridade
+A aplicação tem **54 testes automatizados** (`python -m unittest`): integridade
 do catálogo, recuperação do golpe certo para cada exemplo, cada regra local,
 validação da resposta do modelo (risco inválido, golpe fora da lista, trecho
-inventado, JSON quebrado), tentativa de injeção de instruções, modo sem IA,
+inventado, JSON quebrado), troca para modelos reserva, tentativa de injeção de instruções, modo sem IA,
 cliente HTTP e interface — incluindo a garantia de que texto gerado pelo modelo
 não é interpretado como HTML ou imagem remota. As respostas do modelo nesses
 testes são simuladas; o desempenho real é medido na seção 4.
@@ -439,7 +440,6 @@ início teria poupado tempo.
 - Atualização contínua do catálogo com golpes novos relatados por bancos e
   órgãos públicos.
 - Pesos das regras ajustados por dados reais, ou um classificador treinado.
-- Alternativa automática de modelo quando o principal estiver sobrecarregado.
 
 ---
 
@@ -502,7 +502,9 @@ DADOS: {mensagem, sinais_automaticos: [{sinal, trecho}], golpes_candidatos: [{id
 
 `temperature = 0.2`, `maxOutputTokens = 4096`, modo JSON; tempo limite de 90 s;
 até 3 novas tentativas para erros HTTP 500, 502, 503 e 504 (esperas de 2, 5 e
-10 s); 1 nova tentativa em caso de tempo esgotado e 1 em caso de JSON inválido.
+10 s); 1 nova tentativa em caso de tempo esgotado e 1 em caso de JSON inválido;
+se o modelo seguir indisponível (5xx, tempo esgotado ou 404), os modelos reserva
+`gemini-3.1-flash-lite` e `gemini-flash-lite-latest` são tentados em ordem.
 
 ## Apêndice B — Regras locais
 

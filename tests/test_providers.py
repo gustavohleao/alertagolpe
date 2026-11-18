@@ -103,6 +103,19 @@ class ProviderTests(unittest.TestCase):
             generate("s", "p", ProviderConfig("gemini", "modelo", "chave-ficticia"), client=self.client(stuck))
         self.assertEqual(len(calls), 2)
 
+    def test_errors_flag_when_another_model_could_work(self):
+        cases = {503: True, 500: True, 404: True, 401: False, 403: False, 429: False, 400: False}
+        for status, expected in cases.items():
+            with self.subTest(status=status), patch("alertagolpe.providers.time.sleep"):
+                with self.assertRaises(ProviderError) as caught:
+                    generate("s", "p", ProviderConfig("gemini", "modelo", "chave-ficticia"), client=self.client(lambda r, st=status: httpx.Response(st)))
+                self.assertEqual(caught.exception.model_unavailable, expected)
+        def slow(request):
+            raise httpx.ReadTimeout("lento")
+        with self.assertRaises(ProviderError) as caught:
+            generate("s", "p", ProviderConfig("gemini", "modelo", "chave-ficticia"), client=self.client(slow))
+        self.assertTrue(caught.exception.model_unavailable)
+
     def test_quota_and_auth_errors_are_not_retried(self):
         for status in (400, 401, 403, 404, 429):
             with self.subTest(status=status):
