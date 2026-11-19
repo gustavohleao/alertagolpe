@@ -1,0 +1,125 @@
+{
+  "descricao": "Teste de reserva (18/11/2026): 10 golpes e 10 mensagens legítimas inéditas, fictícias, escritas com assistência de IA depois dos ajustes e não usadas para ajustar nada. Mede a generalização do app final. O tipo de golpe não é rotulado.",
+  "mensagens": [
+    {
+      "id": "R01",
+      "rotulo": "golpe",
+      "golpe": null,
+      "texto": "Olá, aqui é do suporte técnico da Vivo. Seu chip será cancelado hoje por inatividade. Para manter seu número, me informe o código que acabou de chegar por SMS."
+    },
+    {
+      "id": "R02",
+      "rotulo": "golpe",
+      "golpe": null,
+      "texto": "Filho, mandei mensagem do celular do meu colega porque o meu descarregou. Preciso que você pague um boleto pra mim agora, depois te explico, é urgente. Vou te mandar o código de barras."
+    },
+    {
+      "id": "R03",
+      "rotulo": "golpe",
+      "golpe": null,
+      "texto": "Seu pedido na Shein está parado na alfândega. Para não ser devolvido, pague a taxa de desembaraço de R$ 47,80 até 23h59 em shein-rastreio-br.com"
+    },
+    {
+      "id": "R04",
+      "rotulo": "golpe",
+      "golpe": null,
+      "texto": "Banco do Brasil: seus pontos Livelo expiram hoje! Troque agora 18.500 pontos por produtos ou dinheiro: livelo-bb-resgate.com.br"
+    },
+    {
+      "id": "R05",
+      "rotulo": "golpe",
+      "golpe": null,
+      "texto": "Trabalhe conosco! Empresa de logística contrata motorista para entregas. Salário de R$ 4.500 + benefícios. Para garantir a vaga, pague a taxa do curso de integração de R$ 150 pelo Pix."
+    },
+    {
+      "id": "R06",
+      "rotulo": "golpe",
+      "golpe": null,
+      "texto": "Oi, aqui é a sua vizinha do 302, tô sem bateria e usando o celular da minha filha. Acabei trancada fora de casa e o chaveiro só aceita Pix. Me empresta 180? Devolvo à noite."
+    },
+    {
+      "id": "R07",
+      "rotulo": "golpe",
+      "golpe": null,
+      "texto": "Seu CPF foi usado para abrir uma conta no Banco Inter. Se não foi você, ligue imediatamente para 0800 777 4321 e cancele, ou o débito será lançado no seu nome."
+    },
+    {
+      "id": "R08",
+      "rotulo": "golpe",
+      "golpe": null,
+      "texto": "Sou o Carlos, do escritório que cuida do inventário da sua família. Saiu a sua parte da herança, R$ 32 mil. Para transferir, precisamos que pague o imposto de transmissão de R$ 1.900 hoje."
+    },
+    {
+      "id": "R09",
+      "rotulo": "golpe",
+      "golpe": null,
+      "texto": "Promoção relâmpago: Air Fryer Philips por R$ 79,90 com frete grátis, só nas próximas 2 horas! Estoque limitado: ofertasrelampago-br.shop"
+    },
+    {
+      "id": "R10",
+      "rotulo": "golpe",
+      "golpe": null,
+      "texto": "Amor, ganhei uma bolada na plataforma de apostas, mas pra sacar preciso pagar a taxa de liberação de R$ 600. Você me empresta? Assim que cair te devolvo em dobro."
+    },
+    {
+      "id": "R11",
+      "rotulo": "legitima",
+      "golpe": null,
+      "texto": "Banco Inter: você recebeu um Pix de R$ 75,00 de ANA CLARA LIMA. Confira no seu extrato."
+    },
+    {
+      "id": "R12",
+      "rotulo": "legitima",
+      "golpe": null,
+      "texto": "Oi! Só lembrando que a mensalidade do futebol de quinta é 30 reais. Quem puder já manda o Pix pro Rafa, ele que tá organizando."
+    },
+    {
+      "id": "R13",
+      "rotulo": "legitima",
+      "golpe": null,
+      "texto": "Detran-SP: seu agendamento para o exame prático foi confirmado para 25/11 às 8h. Compareça com 30 minutos de antecedência e com documento original."
+    },
+    {
+      "id": "R14",
+      "rotulo": "legitima",
+      "golpe": null,
+      "texto": "Olá! Seu pedido no Mercado Livre foi aprovado e será enviado em até 2 dias úteis. Acompanhe a entrega pelo app."
+    },
+    {
+      "id": "R15",
+      "rotulo": "legitima",
+      "golpe": null,
+      "texto": "Prezado cliente, informamos que a agência Centro estará fechada na segunda-feira por conta do feriado municipal. Os canais digitais funcionam normalmente."
+    },
+    {
+      "id": "R16",
+      "rotulo": "legitima",
+      "golpe": null,
+      "texto": "Filho, cheguei bem na casa da tia. A viagem foi tranquila. Amanhã te ligo, beijo."
+    },
+    {
+      "id": "R17",
+      "rotulo": "legitima",
+      "golpe": null,
+      "texto": "Seu código de acesso ao app Caixa é 739104. Não compartilhe com ninguém. A Caixa nunca pede este código."
+    },
+    {
+      "id": "R18",
+      "rotulo": "legitima",
+      "golpe": null,
+      "texto": "Netflix: seu plano mudou para o Padrão com anúncios a partir da próxima fatura. Para alterar, acesse Conta no app ou em netflix.com."
+    },
+    {
+      "id": "R19",
+      "rotulo": "legitima",
+      "golpe": null,
+      "texto": "Boa tarde! Aqui é da autoescola. A sua aula de direção de amanhã foi remarcada para as 15h por causa da chuva. Tudo bem?"
+    },
+    {
+      "id": "R20",
+      "rotulo": "legitima",
+      "golpe": null,
+      "texto": "Pessoal, o boleto do condomínio de dezembro já está disponível no app do condomínio. O vencimento é dia 10."
+    }
+  ]
+}

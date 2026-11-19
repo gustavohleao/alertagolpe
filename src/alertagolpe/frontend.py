@@ -8,7 +8,7 @@ from pathlib import Path
 import streamlit as st
 
 from .analyzer import MAX_MESSAGE_CHARS, AnalysisError, analyze
-from .catalog import BY_ID, CATALOG
+from .catalog import BY_ID, CATALOG, REAL_EXAMPLES
 from .providers import ProviderConfig, ProviderError, list_models
 from .settings import load_settings
 from .signals import RULES, alerts
@@ -111,6 +111,13 @@ def _result(analysis) -> None:
                      f'<p>{safe(scam.como_funciona)}</p><div class="sim-meter"><span>Semelhança</span><div class="sim-track">'
                      f'<i style="--w:{max(6, min(100, round(score * 250)))}%"></i></div><b>{score:.2f}</b></div>'
                      '<div class="sources">Fontes: ' + " · ".join(f'<a href="{safe(u)}" target="_blank" rel="noopener">{i}</a>' for i, u in enumerate(scam.fontes, 1)) + "</div></div>")
+                real = REAL_EXAMPLES.get(scam.id)
+                if real:
+                    ex = real[0]
+                    texto = ex.texto if len(ex.texto) <= 220 else ex.texto[:217].rstrip() + "…"
+                    url = ex.fonte.split(" ")[0]
+                    html(f'<div class="real-example"><div class="mini-label">MENSAGEM REAL DESTE GOLPE</div><p>“{safe(texto)}”</p>'
+                         f'<a href="{safe(url)}" target="_blank" rel="noopener">ver reportagem</a></div>')
             else:
                 html('<p class="muted-note">A mensagem não corresponde a nenhum golpe do catálogo.</p>')
         with st.container(key="signals_panel"):

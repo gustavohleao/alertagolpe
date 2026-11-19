@@ -9,7 +9,7 @@ from streamlit.testing.v1 import AppTest
 from alertagolpe.analyzer import MAX_MESSAGE_CHARS, AnalysisError, analyze, catalog_index
 from alertagolpe.catalog import BY_ID, CATALOG
 from alertagolpe.providers import Generation, ProviderConfig
-from alertagolpe.signals import detect, local_level, local_score
+from alertagolpe.signals import detect, local_level, local_score, normalize
 
 CONFIG = ProviderConfig("gemini", "teste", "chave-secreta")
 FALSO_PARENTE = "Oi mãe, troquei de número, salva esse aqui. Preciso de um Pix urgente hoje, depois te explico."
@@ -60,6 +60,13 @@ class SignalTests(unittest.TestCase):
         self.assertNotIn("canal_oficial", {s.key for s in scam_signals})
         self.assertIn("link", {s.key for s in scam_signals})
         self.assertNotIn("canal_oficial", {s.key for s in detect("Baixe o aplicativo de suporte que vou te enviar")})
+
+    def test_disguised_text_is_normalized_before_rules(self):
+        disguised = "Seu P1X fo1 b​lo​queado. *Inf0rme* sua s3nha: hxxps://libera-pix[.]com"
+        self.assertEqual(normalize(disguised), "Seu PiX foi bloqueado. Informe sua senha: https://libera-pix.com")
+        self.assertTrue({"pix", "codigo_senha", "link"} <= {s.key for s in detect(disguised)})
+        # números de verdade (valores, horários, códigos, cartão) não são alterados
+        self.assertEqual(normalize("Cartão final 4410, R$ 32,90 às 18h, código 482193"), "Cartão final 4410, R$ 32,90 às 18h, código 482193")
 
     def test_normal_message_scores_low(self):
         signals = detect("A reunião do grupo ficou para quinta às 19h na biblioteca.")

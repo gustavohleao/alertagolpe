@@ -71,8 +71,26 @@ RULES: tuple[Rule, ...] = (
 LEVELS = (("alto", 55), ("medio", 25), ("baixo", 0))
 
 
+_INVISIBLE = re.compile("[\u200b-\u200f\u2060\ufeff\u00ad]")
+_LEET = str.maketrans({"0": "o", "1": "i", "3": "e", "4": "a", "5": "s"})
+# Palavra com letras e números misturados ("P1X", "s3nha"), com 3 ou mais caracteres.
+_MIXED_WORD = re.compile(r"\b(?=\w*[a-zA-Z])(?=\w*[0-9])\w{3,}\b")
+
+
+def normalize(message: str) -> str:
+    """Desfaz disfarces comuns antes das regras: caracteres invisíveis, formatação do
+    WhatsApp (*negrito*, _itálico_, ~riscado~), links "desarmados" (hxxp, [.]) e
+    letras trocadas por números em palavras mistas ("P1X", "s3nha")."""
+    text = _INVISIBLE.sub("", message)
+    text = re.sub(r"[*_~]+", "", text)
+    text = re.sub(r"hxxp", "http", text, flags=_I).replace("[.]", ".").replace("(.)", ".")
+    text = _MIXED_WORD.sub(lambda m: m.group(0) if re.search(r"\d{2,}", m.group(0)) or "." in m.group(0) else m.group(0).translate(_LEET), text)
+    return text
+
+
 def detect(message: str) -> list[Signal]:
     found = []
+    message = normalize(message)
     for rule in RULES:
         match = rule.pattern.search(message)
         if match:

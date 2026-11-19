@@ -1,0 +1,117 @@
+{
+ "descricao": "Teste com mensagens REAIS (14 golpes e 2 legítimas), copiadas de reportagens e alertas públicos (campo fonte). Separadas antes do treino: nenhuma delas entrou no catálogo. Dados pessoais substituídos por [NOME] etc.",
+ "mensagens": [
+  {
+   "id": "R02",
+   "rotulo": "golpe",
+   "golpe": "G10",
+   "texto": "Estava precisando receber um dinheiro para pagar o aluguel, mas o rapaz mandou no número errado. Você pode transferir aqui para mim",
+   "fonte": "https://www.infomoney.com.br/?p=2527534"
+  },
+  {
+   "id": "R04",
+   "rotulo": "golpe",
+   "golpe": "G02",
+   "texto": "Sua compra de 1.972,00 no dia 12/07 foi AUTORIZADA com SUCESSO em MAGAZINE LUIZA  Para CANCELAMENTO da compra ligue: 0800 022 5805",
+   "fonte": "https://blog.bancomercantil.com.br/seguranca/golpe-do-0800/ (transcrita pelo agente de pesquisa a partir do print publicado na matéria)"
+  },
+  {
+   "id": "R06",
+   "rotulo": "golpe",
+   "golpe": "G03",
+   "texto": "Seu banco informa: acesse e atualize seus dados agora mesmo no http://bit.ly/2xm4R7A para não ter sua conta bloqueada",
+   "fonte": "https://idec.org.br/dicas-e-direitos/golpe-bancario-cuidado-para-nao-cair-nele"
+  },
+  {
+   "id": "R09",
+   "rotulo": "golpe",
+   "golpe": "G04",
+   "texto": "CORREIOS: Seu pacote foi taxado e aguarda sua retirada. Para saber mais, acesse: https://portaldosrastreiobrasil.com/rastreio",
+   "fonte": "https://www.folhavitoria.com.br/geral/encomenda-retida-golpistas-mandam-mensagem-com-link-falso-dos-correios/"
+  },
+  {
+   "id": "R11",
+   "rotulo": "golpe",
+   "golpe": "G04",
+   "texto": "Correios: Sua encomenda ( n°de rastreioxxxxxxxxxxx)foi taxada. Para liberar a entrega, realize o pagamento. Mais detalhes em https://pedidocorreio.online/(n° rastreio xxxxxxxx)",
+   "fonte": "https://blog.reclameaqui.com.br/golpe-dos-correios-cuidado-com-link-falso-enviado-por-mensagem/"
+  },
+  {
+   "id": "R13",
+   "rotulo": "golpe",
+   "golpe": "G13",
+   "texto": "NOTIFICAÇÃO EXTRAJUDICIAL. Suspensão da sua CNH em andamento. saiba mais e evite sua restrição",
+   "fonte": "https://mais.opovo.com.br/jornal/cidades/2024/12/15/detran-identifica-disparo-em-massa-de-sms-sobre-suspensao-da-cnh-e-alerta-para-golpe-no-ceara.html"
+  },
+  {
+   "id": "R16",
+   "rotulo": "golpe",
+   "golpe": "G13",
+   "texto": "PREVIDÊNCIA SOCIAL: Seu teste de vida se encontra pendente, evite o bloqueio do seu benefício. Contate: 4XXX2266.",
+   "fonte": "https://www.gov.br/inss/pt-br/noticias/beneficiarios-e-servidores-do-inss-estao-recebendo-sms-de-prova-de-vida-e-golpe"
+  },
+  {
+   "id": "R17",
+   "rotulo": "golpe",
+   "golpe": "G13",
+   "texto": "Consulte se você tem direito ao saque do FGTS no valor de R$1.045,00",
+   "fonte": "https://tecnoblog.net/343064/golpe-que-circula-no-whatsapp-promete-saque-de-fgts/"
+  },
+  {
+   "id": "R20",
+   "rotulo": "golpe",
+   "golpe": "G06",
+   "texto": "Olá, sou o Gerente Geral do Mercado Livre e atualmente estou recrutando uma equipe de meio período.\nSalário mensal: 1000-5000\ncontato whatsapp\n+5511[número ocultado na fonte]\nClique no link abaixo para consultar o gerente: wa.me/5511[número ocultado na fonte]\n\nLembrete amigável: responda o número \"1\" duas vezes, clique no link para adicionar um administrador ou copie-o para o navegador para abri-lo! !",
+   "fonte": "https://www.welivesecurity.com/br/2022/05/27/golpe-do-falso-emprego-circula-pelas-redes-sociais/"
+  },
+  {
+   "id": "R23",
+   "rotulo": "golpe",
+   "golpe": "G09",
+   "texto": "Parabéns você ganhou! Você ganhou R$200 Reais via PIX! Para receber via PIX siga os passos abaixo! Clique no botão “Whatsapp” abaixo, selecione 4 grupos do whatsapp e envie. Envie nossa promoção de aniversário para seus amigos ou grupos até que a barra abaixo esteja completa. Após enviar volte para essa página para continuar com seu Pix. Assim que você completar a barrinha, clique em Receber Pix Agora! Compartilhamento repetidos nos mesmos grupos/contatos não serão aceitos pelo sistema! Nosso sistema verificar se houve o compartilhamento, por tanto não burle, para não perde o Pix!",
+   "fonte": "https://olhardigital.com.br/2022/08/09/seguranca/golpe-whatsapp-picpay-pix-policia-federal/"
+  },
+  {
+   "id": "R25",
+   "rotulo": "golpe",
+   "golpe": "G09",
+   "texto": "Anatel em conscientização contra o coronavírus está dando gratuitamente 7 GB de internet",
+   "fonte": "https://tecnoblog.net/noticias/anatel-alerta-para-golpe-via-whatsapp-que-promete-7-gb-gratis/"
+  },
+  {
+   "id": "R27",
+   "rotulo": "golpe",
+   "golpe": "G03",
+   "texto": "Olá, [NOME]\n\nATENÇÃO - DEPARTAMENTO DE COBRANÇA EQUATORIAL\nVenho por meio deste informar que seu PAGAMENTO está em ATRASO.\n\nConsta uma pendência de pagamento referente ao endereço: [ENDEREÇO]\n\nRegularize sua situação para evitar cortes e suspensões.\n\nConsulte os detalhes: https://equatorialpendencias.com/ow0gh!\n\nTemos uma atualização importante: sua fatura foi emitida e está disponível para visualização.\n\nConfira as informações sempre que",
+   "fonte": "https://www.jornalopcao.com.br/ultimas-noticias/golpe-da-conta-de-luz-usa-dados-de-clientes-em-goias-saiba-como-identificar-cobrancas-falsas-877138/"
+  },
+  {
+   "id": "R30",
+   "rotulo": "golpe",
+   "golpe": "G13",
+   "texto": "LOA Aprovada – Consulte seu Reajuste\nPrezado(a) [NOME],\nA Lei Orçamentária Anual (LOA) foi aprovada e sua parcela retroativa do reajuste salarial já pode ser consultada. Utilize a calculadora disponibilizada pelo Ministério da Gestão e Inovação (MGI) para verificar o valor correspondente ao seu reajuste.\nMinistério da Gestão e Inovação em Serviços Públicos – Governo Federal",
+   "fonte": "https://www.ufrgs.br/cpd/?p=7211"
+  },
+  {
+   "id": "R32",
+   "rotulo": "golpe",
+   "golpe": "G21",
+   "texto": "Centenas de pessoas não terão comida e nem um lugar seguro para ficar. Estamos desesperados [...] Se cada um puder ajudar um pouquinho que seja, a gente consegue manter esse trabalho",
+   "fonte": "https://paraibabusiness.com.br/golpistas-se-passam-por-luiza-trajano-do-magalu-para-pedir-falsas-doacoes-ao-rio-grande-do-sul/"
+  },
+  {
+   "id": "R33",
+   "rotulo": "legitima",
+   "golpe": null,
+   "texto": "Enel: Cuidado com SMS falso em nome da Enel!  Nao clique e nao pague por links que informam debitos. Consulte os canais oficiais em www.enel.com.br",
+   "fonte": "https://ncnews.com.br/?p=74124"
+  },
+  {
+   "id": "R34",
+   "rotulo": "legitima",
+   "golpe": null,
+   "texto": "Atenção! A Vivo não envia promoções de desconto em fatura por SMS e nem aceita pagamento por Pix CNPJ. Desconsidere qualquer mensagem recebida",
+   "fonte": "https://www.minhaoperadora.com.br/?p=92304"
+  }
+ ]
+}

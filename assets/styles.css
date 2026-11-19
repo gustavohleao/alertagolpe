@@ -511,3 +511,6 @@ button:focus-visible, a:focus-visible {outline-color: rgba(251,191,36,.7)!import
 [data-testid="stTab"]:hover {background:#fef2f2;}
 
 .chip.good {color:#065f46; background:#d1fae5; border-color:#6ee7b7;}
+.real-example {margin-top:.8rem; padding:.65rem .8rem; border-left:3px solid #f59e0b; background:#fffbeb; border-radius:8px;}
+.real-example p {font-size:.8rem; color:#78350f; margin:.25rem 0; white-space:pre-line;}
+.real-example a {font-size:.72rem; color:#b45309; font-weight:650; text-decoration:none;}

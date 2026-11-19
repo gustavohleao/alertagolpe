@@ -2,6 +2,7 @@
 
 Uso:  python avaliar.py            (regras locais e IA, se houver chave no .env)
       python avaliar.py --local    (somente regras locais, sem chamadas à API)
+      python avaliar.py --conjunto avaliacao/teste-reserva.json   (outro conjunto)
 
 Considera "detectado como golpe" um risco alto ou médio. Salva o resultado de
 cada mensagem em output/avaliacao-resultados.json.
@@ -42,7 +43,7 @@ def run(mode: str, messages: list[dict], config, fallbacks: tuple[str, ...] = ()
         "modo": mode,
         "golpes_detectados": f"{len(detected)}/{len(scams)}",
         "golpes_como_alto": f"{sum(r['risco'] == 'alto' for r in scams)}/{len(scams)}",
-        "tipo_de_golpe_correto": f"{sum(r['golpe_previsto'] == r['esperado'] for r in detected)}/{len(detected)}",
+        "tipo_de_golpe_correto": f"{sum(r['golpe_previsto'] == r['esperado'] for r in detected if r['esperado'])}/{sum(1 for r in detected if r['esperado'])}",
         "alarmes_falsos": f"{len(false_alarm)}/{len(legit)}",
         "alarmes_falsos_alto": f"{sum(r['risco'] == 'alto' for r in legit)}/{len(legit)}",
         "acuracia": f"{len(detected) + len(legit) - len(false_alarm)}/{len(scams) + len(legit)}",
@@ -54,7 +55,8 @@ def run(mode: str, messages: list[dict], config, fallbacks: tuple[str, ...] = ()
 
 
 def main() -> None:
-    data = json.loads((ROOT / "avaliacao" / "mensagens.json").read_text(encoding="utf-8"))
+    source = Path(sys.argv[sys.argv.index("--conjunto") + 1]) if "--conjunto" in sys.argv else ROOT / "avaliacao" / "mensagens.json"
+    data = json.loads((source if source.is_absolute() else ROOT / source).read_text(encoding="utf-8"))
     messages = data["mensagens"]
     settings = load_settings(ROOT)
     results = [run("local", messages, None)]
@@ -66,7 +68,7 @@ def main() -> None:
     keys = ["golpes_detectados", "golpes_como_alto", "tipo_de_golpe_correto", "alarmes_falsos", "alarmes_falsos_alto", "acuracia", "erros", "tempo_medio_s", "tempo_max_s"]
     for key in keys:
         print(f"  {key:24}" + "".join(f"{str(r[key]):>12}" for r in results))
-    out = ROOT / "output" / "avaliacao-resultados.json"
+    out = ROOT / "output" / ("avaliacao-resultados.json" if "--conjunto" not in sys.argv else f"avaliacao-{source.stem}.json")
     out.parent.mkdir(exist_ok=True)
     out.write_text(json.dumps({"data": datetime.now(timezone.utc).isoformat(), "modelo": settings["LLM_MODEL"],
                                "conjunto": data["descricao"], "resultados": results}, ensure_ascii=False, indent=2), encoding="utf-8")

@@ -1,0 +1,167 @@
+{
+ "descricao": "Mensagens de golpe REAIS, copiadas de reportagens e alertas públicos (campo fonte), usadas como exemplos no catálogo: entram no índice de busca e são mostradas ao modelo junto com cada golpe candidato. Dados pessoais de vítimas foram substituídos por [NOME], [CPF] etc. Coletadas em 18/11/2026 com assistência de um agente de IA, que abriu cada página; parte foi conferida manualmente. As mensagens de teste ficam separadas em avaliacao/reais-teste.json.",
+ "exemplos": [
+  {
+   "id": "R01",
+   "golpe": "G01",
+   "tipo": "falso parente / número novo (celular quebrado)",
+   "texto": "Meu celular foi danificado em uma queda e eu o levei para a assistência técnica. Daqui a 2 a 3 dias o técnico me disse que ele fica pronto.",
+   "parcial": true,
+   "fonte": "https://tecnoblog.net/noticias/golpe-via-whatsapp-usa-dados-vazados-e-pede-dinheiro-a-parentes-da-vitima/",
+   "data_fonte": "2021-12-09"
+  },
+  {
+   "id": "R03",
+   "golpe": "G08",
+   "tipo": "WhatsApp clonado / pedido de código",
+   "texto": "Oi, acabei enviando meu código por engano para o seu número. Pode me passar?",
+   "parcial": false,
+   "fonte": "https://seucreditodigital.com.br/golpe-codigo-whatsapp-sms/",
+   "data_fonte": "2025-06-15"
+  },
+  {
+   "id": "R05",
+   "golpe": "G03",
+   "tipo": "SMS de banco com link (bloqueio de acesso)",
+   "texto": "BB Informa: seu acesso foi bloqueado por motivos de segurança, para fazer o desbloqueio acesse bit.ly/xxx",
+   "parcial": true,
+   "fonte": "https://www.tecmundo.com.br/seguranca/119982-video-mostra-criminoso-enviando-sms-falso-clientes-banco-do-brasil.htm",
+   "data_fonte": "2017-07-27"
+  },
+  {
+   "id": "R07",
+   "golpe": "G03",
+   "tipo": "pontos/milhas expirando (SMS)",
+   "texto": "BANCO DO BRASIL: VOCE TEM APROX: 230.397 PONTO$ PROXIMOS DO VENCIMENTO! PARA RESGATAR, VISITE: [link ocultado na fonte]com",
+   "parcial": true,
+   "fonte": "https://www.welivesecurity.com/br/2020/12/23/golpe-via-sms-rouba-dados-bancarios-prometendo-pontos-em-programa-de-fidelidade/",
+   "data_fonte": "2020-12-23"
+  },
+  {
+   "id": "R08",
+   "golpe": "G04",
+   "tipo": "Correios / taxa alfandegária (SMS)",
+   "texto": "CORREIOS: [NOME] Sua encomenda esta retida. Pague a taxa para liberar a entrega. Acesse https://taxascorreios.online/?e96adb55",
+   "parcial": false,
+   "fonte": "https://www.folhavitoria.com.br/geral/encomenda-retida-golpistas-mandam-mensagem-com-link-falso-dos-correios/",
+   "data_fonte": "2024-07-31"
+  },
+  {
+   "id": "R10",
+   "golpe": "G04",
+   "tipo": "Correios / fiscalização alfandegária (SMS com erro de codificação)",
+   "texto": "CORREIOS: Importante! Seu pedido foi bloqueado pela fiscalizaAAo alfandegAria. Para mais informaAAes e prA3ximos passos, acesse: https://correio.taxasdeimportao.com/",
+   "parcial": false,
+   "fonte": "https://www.folhavitoria.com.br/geral/encomenda-retida-golpistas-mandam-mensagem-com-link-falso-dos-correios/",
+   "data_fonte": "2024-07-31"
+  },
+  {
+   "id": "R12",
+   "golpe": "G13",
+   "tipo": "Detran / encargos na CNH (SMS)",
+   "texto": "DETRAN: Prezado(a), constam encargos em sua CNH. Atente-se ao PRAZO VIGENTE, confira: [link]. Protocolo OOZXP.",
+   "parcial": true,
+   "fonte": "https://www.96fm.com.br/post/golpe-usa-falsa-mensagem-do-detran-sobre-irregularidades-na-cnh-para-atrair-vitimas-por-link",
+   "data_fonte": "2026-10-22"
+  },
+  {
+   "id": "R14",
+   "golpe": "G13",
+   "tipo": "Receita Federal / CPF com pendência (WhatsApp)",
+   "texto": "Consta em nosso sistema a identificação de uma pendência registrada vinculada ao documento nº [CPF], que pode impactar a regularidade do seu nome. PENDÊNCIA GRAVE EM ABERTO. Isso impede: Enviar e receber Pix, acesso a contas, cartões e investimentos em qualquer banco; operações financeiras normais; nome em cadastros restritivos (Serasa, SPC, Bacen). Recomendamos que a consulta seja realizada imediatamente por meio do link abaixo: https://regularizetributos. Para evitar inconsistências futuras e possíveis restrições operacionais, é importante verificar a situação o quanto antes. Se o link não estiver azul, envie apenas um 'Oi', saia da conversa e entre novamente. Cadastro concluído no sistema",
+   "parcial": false,
+   "fonte": "https://online.crcsp.org.br/portal/noticias/noticia.asp?c=10703",
+   "data_fonte": "2026-04-02"
+  },
+  {
+   "id": "R15",
+   "golpe": "G13",
+   "tipo": "Receita Federal / pendência fiscal (e-mail)",
+   "texto": "Pendencia Fiscal ID: 9078414\nPrezado(a) [NOME] ,\nDetectamos uma pendencia fiscal grave no seu CPF, relacionada a declaracao do Imposto de Renda 2024.\nSegundo a Lei n 9.430/1996, o nao cumprimento pode gerar:\nMulta de ate 20% sobre o imposto devido;\nInclusao no CADIN e outros orgaos de credito;\nPossibilidade de penhora de bens e valores;\nRestricao para viagens internacionais.\nA regularizacao deve ser feita IMEDIATAMENTE para evitar sancoes graves.\nREGULARIZAR AGORA\nProtocolo: 9078414\nData: 15/04/2025\nSe a pendencia ja foi resolvida, favor desconsiderar esta mensagem.\nEste e-mail foi enviado automaticamente pelo sistema da Receita Federal. Nao responda esta mensagem.",
+   "parcial": false,
+   "fonte": "https://www.itatiaia.com.br/brasil/receita-alerta-para-golpe-do-falso-e-mail-chamado-pendencia-fiscal/",
+   "data_fonte": "2025-04-18"
+  },
+  {
+   "id": "R18",
+   "golpe": "G13",
+   "tipo": "benefício governamental falso (Bolsa Família)",
+   "texto": "Governo abre este mês as inscrições para quem vai receber o décimo terceiro salário do programa Bolsa Família, confira se você tem direito",
+   "parcial": true,
+   "fonte": "https://www.jb.com.br/pais/2019/07/1008448-golpe-no-whatsapp-que-promete-liberar-13--do-bolsa-familia-instala-virus.html",
+   "data_fonte": "2019-07-05"
+  },
+  {
+   "id": "R19",
+   "golpe": "G06",
+   "tipo": "falsa vaga / trabalho remoto (SMS/iMessage)",
+   "texto": "Olá, sou gerente de contratação na Magazzine Luiza, devido a vagas estaremos enviando uma candidatura de meio período para trabalhar em casa, o salário será pago no mesmo dia, 900-4000 reais por dia. Interessados   em entrar em contato comigo para consulta no Whatsapp+5511[número ocultado na fonte]\n\nClique no link para adicionar automaticamente:\nhttps://wa.me/5511[número ocultado na fonte]",
+   "parcial": false,
+   "fonte": "https://www.welivesecurity.com/br/2022/05/27/golpe-do-falso-emprego-circula-pelas-redes-sociais/",
+   "data_fonte": "2022-05-27"
+  },
+  {
+   "id": "R21",
+   "golpe": "G18",
+   "tipo": "falso advogado / alvará (WhatsApp)",
+   "texto": "Olá, Bom dia! [...] O escritório comunica sobre a autorização do seu processo que se encontra em fase de pagamento [...] solicitar o recolhimento dos alvarás de liberação, que estarão sendo solicitados e exigidos no processo mencionado acima",
+   "parcial": true,
+   "fonte": "https://diariodonoroeste.com.br/oab-paranavai-reforca-alerta-sobre-golpe-do-falso-advogado-por-mensagem-de-texto-via-aplicativo",
+   "data_fonte": "2024-07-19"
+  },
+  {
+   "id": "R22",
+   "golpe": "G09",
+   "tipo": "prêmio/promoção falsa (quiz PicPay, 1ª mensagem)",
+   "texto": "Participe e Ganhe! Em comemoração ao nosso Aniversário, preparamos algo diferente, e quem ganha presente é você! Preparamos um Quiz muito divertido, chegue até o final do Quiz e receba um Pix de R$ 200 reais! 98.971 Pessoas participando agora … 37.035 Pessoas Receberam R$200 no Pix há 5 minutos …",
+   "parcial": false,
+   "fonte": "https://olhardigital.com.br/2022/08/09/seguranca/golpe-whatsapp-picpay-pix-policia-federal/",
+   "data_fonte": "2022-08-09"
+  },
+  {
+   "id": "R24",
+   "golpe": "G09",
+   "tipo": "prêmio/sorteio falso (aniversário Amazon)",
+   "texto": "Parabéns! Você foi escolhido para participar de nossa pesquisa. Você levará apenas um minuto e receberá um prêmio fantástico: um Huawei Mate 40 Pro 5G Full Netcom 8GB + 256GB (preto brilhante)! Cada quarta-feira nós escolhemos aleatoriamente 100 usuários para dar a eles a chance de ganhar prêmios incríveis. O prêmio de hoje é um Huawei Mate 40 Pro 5G Full Netcom 8GB + 256GB (preto brilhante)! Haverá 100 vencedores sortudos. Esta pesquisa visa melhorar a qualidade do serviço prestado aos nossos usuários e sua participação será recompensada 100%",
+   "parcial": true,
+   "fonte": "https://seucreditodigital.com.br/amazon-premios-no-whatsapp-e-golpe/",
+   "data_fonte": "2021-04-22"
+  },
+  {
+   "id": "R26",
+   "golpe": "G03",
+   "tipo": "conta de energia / aviso de corte (SMS)",
+   "texto": "Aviso de Corte - ENEL: Identificamos debito em aberto vinculado ao seu cadastro. REGULARIZE IMEDIATAMENTE, acesse: http://cdnenel.site",
+   "parcial": false,
+   "fonte": "https://ncnews.com.br/?p=74124",
+   "data_fonte": "2026-11-03"
+  },
+  {
+   "id": "R28",
+   "golpe": "G03",
+   "tipo": "streaming / Netflix assinatura cancelada (e-mail)",
+   "texto": "NETFLIX\nAté a próxima\nOlá, [E-MAIL]@outlook.com ,\nInfelizmente, não conseguimos resolver o problema com seu pagamento e estamos cancelando sua assina[trecho encoberto na imagem].\nSerá um prazer tê-lo novamente como assinante. Para isso, é só você reativar seu plano.\nREINICIAR ASSINATURA\nSe você tiver qualquer pergunta, [trecho encoberto na imagem] Centro de Ajuda ou fale conosco.\n–Equipe NETFLIX",
+   "parcial": true,
+   "fonte": "https://www.welivesecurity.com/pt/golpes-fraudes/golpe-de-phishing-se-passa-pela-netflix-e-engana-usuarios-com-promessa-de-reativacao-de-assinatura/",
+   "data_fonte": "2025-07"
+  },
+  {
+   "id": "R29",
+   "golpe": "G05",
+   "tipo": "boleto falso / 2ª via de fatura (anexo de e-mail Claro)",
+   "texto": "2º VIA DE FATURA - CÓDIGO DE BARRAS\nNesse documento consta apenas o valor, vencimento e código de barras da sua fatura.\nEste documento é válido para pagamento nos caixas de qualquer rede bancária ou com o código de barras abaixo no autoatendimento ou Internet Bank do seu banco. Utilize, preferencialmente, os bancos Santander, HSBC ou Bradesco.\nValor: R$ 489,90",
+   "parcial": true,
+   "fonte": "https://tecnoblog.net/noticias/e-mail-falso-da-claro-tenta-roubar-r-48990-atraves-de-boleto/",
+   "data_fonte": "2021-02-10"
+  },
+  {
+   "id": "R31",
+   "golpe": "G03",
+   "tipo": "e-mail / conta Outlook será cancelada",
+   "texto": "para continuar utilizando seu e-mail, será necessário efetuar uma verificação em sua conta",
+   "parcial": true,
+   "fonte": "https://wp.ufpel.edu.br/gepesc/material-informativo/catalogo-de-fraudes/fraude-conta-outlook-cancelada/",
+   "data_fonte": "2024-12-07"
+  }
+ ]
+}

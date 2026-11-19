@@ -6,6 +6,8 @@ IA e sujeito à revisão do grupo. As mensagens de exemplo são fictícias.
 """
 
 from dataclasses import dataclass
+import json
+from pathlib import Path
 
 from .models import Chunk
 
@@ -19,6 +21,15 @@ SERASA = "https://www.serasa.com.br/guias/como-proteger-meu-cpf-de-fraudes/"
 BCB_SVR = "https://valoresareceber.bcb.gov.br/"
 SVR_GOLPE = "https://olhardigital.com.br/2023/07/06/seguranca/cuidado-golpes-envolvendo-dinheiro-esquecido-voltam-a-acontecer/"
 SEBRAE_MEI = "https://agenciasebrae.com.br/cultura-empreendedora/nao-caia-em-golpe-conheca-as-cobrancas-falsas-em-alta-contra-o-mei"
+OAB_ADVOGADO = "https://www.oabsp.org.br/jornaldaadvocacia/24-11-04-1434-oab-sp-faz-novos-alertas-para-combater-o-golpe-do-falso-advogado"
+FEBRABAN_ADVOGADO = "https://jornaldebrasilia.com.br/noticias/brasil/febraban-alerta-consumidores-sobre-o-golpe-do-falso-advogado/"
+PCPR_SEQUESTRO = "https://www.parana.pr.gov.br/aen/Noticia/PCPR-orienta-populacao-sobre-como-identificar-e-evitar-o-golpe-do-falso-sequestro"
+SERASA_SEQUESTRO = "https://www.serasa.com.br/premium/blog/como-funciona-o-golpe-do-falso-sequestro/"
+SERASA_ALUGUEL = "https://www.serasa.com.br/premium/blog/golpe-aluguel/"
+BAND_ALUGUEL = "https://www.band.com.br/bandnews-fm/noticias/golpe-do-aluguel-falso-criminosos-pedem-caucao-antes-de-visita-ao-imovel-202508070854"
+GOV_DOACAO = "https://agenciagov.ebc.com.br/noticias/202405/campanha-alerta-sobre-golpes-em-que-os-criminosos-solicitam-doacoes-as-vitimas-das-enchentes-nos-estados-do-rs-e-de-sc-com-chave-pix-falsa"
+SANTANDER_DOACAO = "https://www.santander.com.br/blog/golpe-pix-rio-grande-do-sul"
+CNH_SUSPENSA = "https://canaltech.com.br/seguranca/golpe-da-cnh-suspensa-usa-sms-falso-alerta-detran-saiba-como-se-proteger/"
 GOV_DASN = "https://www.gov.br/pt-br/servicos/declarar-receita-bruta-anual-para-o-mei"
 PIX_ERRADO = "https://www.opovo.com.br/noticias/economia/2024/07/11/amp/entenda-o-golpe-do-pix-errado-e-saiba-como-nao-ser-enganado.html"
 
@@ -34,7 +45,31 @@ class Scam:
     fontes: tuple[str, ...]
 
     def index_text(self) -> str:
-        return " ".join([self.nome, self.como_funciona, *self.sinais, self.exemplo])
+        reais = [e.texto for e in REAL_EXAMPLES.get(self.id, ())]
+        return " ".join([self.nome, self.como_funciona, *self.sinais, self.exemplo, *reais])
+
+
+@dataclass(frozen=True)
+class RealExample:
+    """Mensagem de golpe real, copiada de reportagem ou alerta público (campo ``fonte``)."""
+    golpe: str
+    texto: str
+    fonte: str
+
+
+REAL_FILE = Path(__file__).with_name("exemplos_reais.json")
+
+
+def _load_real_examples() -> dict[str, list[RealExample]]:
+    if not REAL_FILE.is_file():
+        return {}
+    out: dict[str, list[RealExample]] = {}
+    for item in json.loads(REAL_FILE.read_text(encoding="utf-8"))["exemplos"]:
+        out.setdefault(item["golpe"], []).append(RealExample(item["golpe"], item["texto"], item["fonte"]))
+    return out
+
+
+REAL_EXAMPLES = _load_real_examples()
 
 
 CATALOG: tuple[Scam, ...] = (
@@ -50,9 +85,9 @@ CATALOG: tuple[Scam, ...] = (
          "Central de Segurança do Banco: identificamos uma compra de R$ 2.890,00 no seu cartão. Se não reconhece, ligue imediatamente para 0800 ou responda com o código que enviamos por SMS para cancelar.",
          ("Desligue e ligue você mesmo para o número oficial do banco, que está no verso do cartão.", "Nenhum banco pede senha, código ou transferência por telefone ou mensagem.", "Não instale aplicativos indicados por quem ligou."),
          (FEBRABAN_TOP, FALSA_CENTRAL)),
-    Scam("G03", "Link falso de banco ou cartão (phishing)",
-         "Mensagem por SMS, e-mail ou WhatsApp imita o banco, informa bloqueio, pontos a vencer ou atualização cadastral e leva a um site falso que captura senha e dados do cartão.",
-         ("Link encurtado ou com endereço estranho", "Bloqueio de conta ou cartão", "Pontos ou milhas prestes a vencer", "Pede atualização de cadastro", "Pede dados do cartão ou senha"),
+    Scam("G03", "Link falso de banco, cartão ou conta (phishing)",
+         "Mensagem por SMS, e-mail ou WhatsApp imita o banco, o e-mail, o streaming ou outro serviço, informa bloqueio, pagamento recusado, caixa cheia, pontos a vencer ou atualização cadastral e leva a um site falso que captura senha e dados do cartão.",
+         ("Link encurtado ou com endereço estranho", "Bloqueio de conta ou cartão", "Pontos ou milhas prestes a vencer", "Pede atualização de cadastro ou de pagamento", "Conta de e-mail, streaming ou rede social prestes a ser excluída", "Pede dados do cartão ou senha"),
          "BANCO INFORMA: seu cartao foi bloqueado por seguranca. Regularize em ate 24h para evitar cancelamento: https://bit.ly/regulariza-cartao",
          ("Não clique no link; acesse o banco apenas pelo aplicativo oficial ou digitando o endereço.", "Confira o remetente: bancos não enviam links para desbloqueio.", "Se digitou dados, avise o banco imediatamente e troque as senhas."),
          (CANALTECH_10, SERASA)),
@@ -111,11 +146,11 @@ CATALOG: tuple[Scam, ...] = (
          ("Instituições sérias não cobram para liberar empréstimo.", "Verifique se a empresa é autorizada pelo Banco Central.", "Nunca pague antecipadamente para receber crédito."),
          (SERASA, CANALTECH_10)),
     Scam("G13", "Falso órgão público ou valores a receber",
-         "Mensagem em nome da Receita Federal, do INSS, do governo ou do Banco Central fala em CPF irregular, restituição, benefício ou 'valores a receber' e pede dados, taxa ou clique em link.",
-         ("Nome de órgão público ou Banco Central", "CPF irregular ou bloqueado", "Valores esquecidos ou benefício a receber", "Link para consulta ou regularização", "Taxa para liberar valor"),
+         "Mensagem em nome da Receita Federal, do INSS, do Detran, do governo ou do Banco Central fala em CPF irregular, restituição, benefício, multa, CNH suspensa, IPVA ou licenciamento pendente, ou 'valores a receber', e pede dados, pagamento por Pix ou clique em link.",
+         ("Nome de órgão público ou Banco Central", "CPF irregular ou bloqueado", "Multa, CNH suspensa, IPVA ou licenciamento pendente", "Valores esquecidos ou benefício a receber", "Link para consulta ou regularização", "Taxa para liberar valor"),
          "Banco Central: você possui R$ 1.874,32 em valores a receber esquecidos. Resgate até amanhã informando seu CPF no link: valores-receber-bc.site",
-         ("O único site de valores a receber é valoresareceber.bcb.gov.br; o Banco Central não envia links.", "Órgãos públicos não cobram taxas por mensagem.", "Consulte só pelos canais oficiais gov.br."),
-         (BCB_SVR, SVR_GOLPE)),
+         ("O único site de valores a receber é valoresareceber.bcb.gov.br; o Banco Central não envia links.", "Órgãos públicos não cobram taxas por mensagem.", "Consulte só pelos canais oficiais gov.br; o Detran não cobra multa por Pix nem por mensagem."),
+         (BCB_SVR, SVR_GOLPE, CNH_SUSPENSA)),
     Scam("G14", "Acesso remoto ao celular (mão fantasma)",
          "Depois de um contato falso de banco ou suporte, a vítima é convencida a instalar um aplicativo de acesso remoto. O golpista passa a controlar o celular e faz transferências.",
          ("Pede para instalar aplicativo", "Fala em proteger ou atualizar a conta", "Aplicativo de suporte ou acesso remoto", "Pede para deixar a tela ligada"),
@@ -129,8 +164,8 @@ CATALOG: tuple[Scam, ...] = (
          ("Nunca envie dinheiro a quem conheceu apenas pela internet.", "Desconfie de quem evita chamadas de vídeo.", "Converse com alguém de confiança antes de decidir."),
          (CANALTECH_10,)),
     Scam("G16", "Troca ou clonagem de cartão",
-         "O golpista troca o cartão da vítima em caixas eletrônicos ou maquininhas, ou um 'motoboy do banco' vai buscar o cartão 'cancelado'. Também há leitura de dados em maquininhas adulteradas.",
-         ("Motoboy vai buscar cartão", "Pede para cortar o cartão e entregar", "Ajuda não solicitada no caixa eletrônico", "Maquininha com visor escondido"),
+         "O golpista troca o cartão da vítima em caixas eletrônicos ou maquininhas, ou um 'motoboy do banco' vai buscar o cartão 'cancelado'. Também há leitura de dados em maquininhas adulteradas e falsos entregadores que cobram uma 'taxa de entrega' na maquininha, digitando um valor muito maior.",
+         ("Motoboy vai buscar cartão", "Pede para cortar o cartão e entregar", "Ajuda não solicitada no caixa eletrônico", "Maquininha com visor escondido", "Entregador cobra taxa extra na maquininha"),
          "Seu cartão foi clonado. Um funcionário do banco vai até a sua casa hoje retirar o cartão para perícia. Corte ao meio, sem danificar o chip, e entregue com a senha anotada.",
          ("O banco nunca busca cartão na sua casa nem pede a senha.", "Não aceite ajuda de estranhos no caixa eletrônico.", "Confira o valor e o próprio cartão ao pagar em maquininhas."),
          (FEBRABAN_TOP, CANALTECH_10)),
@@ -140,6 +175,30 @@ CATALOG: tuple[Scam, ...] = (
          "DECLARAÇÃO ANUAL: seu MEI possui pendência junto à Receita. Evite multa e o cancelamento do CNPJ. Clique em REGULARIZAR e conclua online: mei-regulariza.com.br",
          ("A declaração anual do MEI é gratuita e feita só no Portal do Empreendedor (gov.br) ou no app MEI.", "Consulte pendências digitando gov.br/mei você mesmo, sem clicar no link.", "Não pague assessorias para um serviço gratuito."),
          (SEBRAE_MEI, GOV_DASN)),
+    Scam("G18", "Falso advogado ou processo judicial",
+         "Com dados reais de processos, o golpista se passa pelo advogado da vítima ou pelo escritório e diz que um valor (indenização, alvará, ação trabalhista) foi liberado, mas exige o pagamento de custas, taxas ou impostos por Pix para liberar.",
+         ("Diz ser advogado ou do escritório", "Alvará, indenização ou ação ganha", "Custas ou taxa para liberar o valor", "Pagamento por Pix para pessoa ou empresa", "Contato por número novo"),
+         "Boa tarde, sou do escritório que cuida da sua ação contra a operadora. A indenização de R$ 9.800 saiu, mas para liberar o alvará é preciso pagar as custas de R$ 640 por Pix hoje.",
+         ("A Justiça não cobra por Pix para liberar valores; custas são pagas por guia oficial.", "Confirme com seu advogado pelo telefone que você já tinha, ou no fórum.", "Não pague nada a quem fala de um número novo."),
+         (OAB_ADVOGADO, FEBRABAN_ADVOGADO)),
+    Scam("G19", "Falso sequestro",
+         "Ligação ou mensagem diz que um parente foi sequestrado, às vezes com choro ou voz parecida ao fundo, e exige transferência imediata, proibindo a vítima de desligar ou chamar a polícia.",
+         ("Parente sequestrado ou em perigo", "Ameaça de violência", "Proíbe chamar a polícia ou desligar", "Exige transferência ou Pix imediato"),
+         "Estamos com a sua filha. Se desligar ou chamar a polícia, ela não volta. Faz agora um Pix de R$ 3 mil e não fala com ninguém.",
+         ("Desligue e ligue para o parente ou para quem está com ele.", "Combine com a família uma palavra de segurança.", "Não faça transferência; chame a polícia pelo 190."),
+         (PCPR_SEQUESTRO, SERASA_SEQUESTRO)),
+    Scam("G20", "Aluguel ou imóvel falso",
+         "Anúncio de imóvel para alugar com preço abaixo do mercado; o 'dono' ou 'corretor' não pode mostrar o imóvel e pede sinal, caução ou reserva por Pix antes da visita e do contrato.",
+         ("Preço muito abaixo do mercado", "Dono no exterior ou sem poder mostrar", "Caução ou sinal antes da visita", "Pressa porque há outros interessados", "Promete mandar as chaves pelo correio"),
+         "Casa de 3 quartos por R$ 900. Tem muita gente interessada; para garantir, faça hoje o Pix de R$ 500 de reserva e depois marcamos a visita.",
+         ("Nunca pague nada antes de visitar o imóvel e assinar o contrato.", "Peça a matrícula do imóvel e confira quem é o dono.", "Pesquise as fotos do anúncio na internet."),
+         (SERASA_ALUGUEL, BAND_ALUGUEL)),
+    Scam("G21", "Falsa doação ou vaquinha",
+         "Depois de uma tragédia (enchente, incêndio) ou usando a história de um doente, golpistas pedem doações por Pix para uma chave pessoal, ou alteram a chave Pix de campanhas verdadeiras.",
+         ("Tragédia recente ou pessoa doente", "Apelo emocional e urgência", "Chave Pix pessoal (e-mail, celular, CPF)", "Nome do recebedor diferente da instituição"),
+         "Ajude a pequena Laura a fazer a cirurgia! Faltam só R$ 8 mil. Qualquer valor salva uma vida. Pix: ajudalaura2025@gmail.com",
+         ("Doe só pelos canais divulgados pelo governo ou pela instituição.", "Antes de confirmar o Pix, confira se o nome do recebedor é o da instituição.", "Desconfie de chaves Pix de e-mail pessoal ou celular."),
+         (GOV_DOACAO, SANTANDER_DOACAO)),
 )
 
 BY_ID = {scam.id: scam for scam in CATALOG}

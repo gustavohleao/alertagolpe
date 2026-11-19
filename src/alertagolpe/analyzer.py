@@ -7,12 +7,12 @@ import re
 import unicodedata
 from time import perf_counter
 
-from .catalog import BY_ID, catalog_chunks
+from .catalog import BY_ID, REAL_EXAMPLES, catalog_chunks
 from .providers import ProviderConfig, ProviderError, generate
 from .retrieval import DocumentIndex, SearchHit
 from .signals import Signal, detect, local_level, local_score
 
-PROMPT_VERSION = "alertagolpe-v3"
+PROMPT_VERSION = "alertagolpe-v4"
 # E-mails de golpe (falso boleto, falsa vaga) podem ser longos.
 MAX_MESSAGE_CHARS = 10000
 RISKS = ("alto", "medio", "baixo")
@@ -42,8 +42,11 @@ Se a mensagem só tem urgência e o nome da empresa, oferece o aplicativo oficia
 e não tem nenhum sinal de golpe, classifique como "baixo" e oriente a conferir pelo aplicativo.
 Um SMS que apenas ENTREGA um código de verificação e avisa para não compartilhá-lo é o próprio
 serviço enviando o código: é legítimo ("baixo"). Golpe é quando alguém PEDE que você informe o código.
-Pedido de dinheiro entre conhecidos, sem urgência, sem troca de número e sem conta de terceiro,
-é conversa normal ("baixo").
+Pedido de dinheiro entre conhecidos ou familiares, de valor pequeno ou com motivo do dia a dia
+(uber, almoço, churrasco, vaquinha), sem troca de número, sem pedir segredo e sem conta de
+terceiro, é conversa normal ("baixo"), mesmo com pressa ou escrito com gírias e abreviações.
+Mensagens reais costumam ter erros de digitação, abreviações ("vc", "pfv"), emojis e letras
+maiúsculas: isso, sozinho, não é sinal de golpe nem de legitimidade.
 
 Exemplos de mensagens legítimas ("baixo"):
 - "Banco X: sua fatura está em atraso e o cartão será bloqueado em 3 dias. Regularize pelo app ou ligue para a central."
@@ -201,7 +204,8 @@ def analyze(message: str, config: ProviderConfig | None, fallback_models: tuple[
         "sinais_automaticos": [{"sinal": s.rotulo, "trecho": s.trecho} for s in signals],
         "golpes_candidatos": [
             {"id": h.chunk.id, "nome": BY_ID[h.chunk.id].nome, "como_funciona": BY_ID[h.chunk.id].como_funciona,
-             "sinais_tipicos": list(BY_ID[h.chunk.id].sinais)}
+             "sinais_tipicos": list(BY_ID[h.chunk.id].sinais),
+             "exemplos_reais": [e.texto[:300] for e in REAL_EXAMPLES.get(h.chunk.id, [])[:2]]}
             for h in hits
         ],
     }
