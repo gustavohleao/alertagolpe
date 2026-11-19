@@ -143,6 +143,29 @@ class AnalyzerTests(unittest.TestCase):
         self.assertEqual(gen.call_count, 3)
 
     @patch("alertagolpe.analyzer.generate")
+    def test_without_internet_local_model_takes_over(self, gen):
+        from alertagolpe.providers import ProviderError
+        local = ProviderConfig("ollama", "qwen2.5:3b")
+        gen.side_effect = [ProviderError("Não foi possível conectar ao provedor.", connection=True), reply()]
+        result = analyze(FALSO_PARENTE, CONFIG, (), local)
+        self.assertEqual([c.args[2].provider for c in gen.call_args_list], ["gemini", "ollama"])
+        self.assertEqual((result.provider, result.model, result.fallback_from), ("ollama", "qwen2.5:3b", "teste"))
+
+    @patch("alertagolpe.analyzer.generate")
+    def test_key_error_does_not_go_to_local_model(self, gen):
+        from alertagolpe.providers import ProviderError
+        gen.side_effect = ProviderError("Autenticação recusada. Confira a chave.")
+        with self.assertRaisesRegex(ProviderError, "chave"):
+            analyze(FALSO_PARENTE, CONFIG, (), ProviderConfig("ollama", "qwen2.5:3b"))
+        self.assertEqual(gen.call_count, 1)
+
+    def test_local_model_page_says_message_stays_on_computer(self):
+        with patch.dict(os.environ, {"LLM_PROVIDER": "ollama", "OLLAMA_MODEL": "qwen2.5:3b"}):
+            app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"), default_timeout=25).run()
+            self.assertFalse(app.exception)
+            self.assertTrue(any("não sai deste computador" in c.value for c in app.caption))
+
+    @patch("alertagolpe.analyzer.generate")
     def test_primary_success_uses_no_reserve(self, gen):
         gen.return_value = reply()
         result = analyze(FALSO_PARENTE, CONFIG, ("reserva-1",))
@@ -191,7 +214,7 @@ class AppTests(unittest.TestCase):
 
     def test_example_analysis_renders_and_model_text_is_escaped(self):
         hostile = "Resumo <img src=https://exemplo.invalid/p> ![x](https://exemplo.invalid/q)"
-        with patch.dict(os.environ, {"GEMINI_API_KEY": "fake", "LLM_MODEL": "teste"}), \
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "fake", "LLM_MODEL": "teste", "LLM_PROVIDER": "gemini", "OLLAMA_MODEL": ""}), \
              patch("alertagolpe.analyzer.generate", return_value=reply(resumo=hostile)):
             app = self.app().run()
             app.text_area(key="message_input").input(FALSO_PARENTE).run()
@@ -204,7 +227,7 @@ class AppTests(unittest.TestCase):
             self.assertFalse(any(b.label in ("Falso parente", "Falsa central", "Mensagem normal") for b in app.button))
 
     def test_without_key_runs_local_rules_only(self):
-        with patch.dict(os.environ, {"GEMINI_API_KEY": "", "LLM_MODEL": ""}), \
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "", "LLM_MODEL": "", "LLM_PROVIDER": "gemini", "OLLAMA_MODEL": ""}), \
              patch("alertagolpe.analyzer.generate") as gen:
             app = self.app().run()
             app.text_area(key="message_input").input('BANCO: Compra de R$ 3.479,00 aprovada no seu cartão final 4410. Se não reconhece, ligue AGORA para a Central de Segurança 0800 591 2034 e informe o código que enviamos para cancelar.').run()
@@ -214,7 +237,7 @@ class AppTests(unittest.TestCase):
             self.assertFalse(app.session_state["analysis"].used_ai)
 
     def test_clear_session_resets_history(self):
-        with patch.dict(os.environ, {"GEMINI_API_KEY": "", "LLM_MODEL": ""}):
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "", "LLM_MODEL": "", "LLM_PROVIDER": "gemini", "OLLAMA_MODEL": ""}):
             app = self.app().run()
             app.text_area(key="message_input").input('Oi! Passando pra lembrar que a reunião do grupo ficou para quinta às 19h, na biblioteca.').run()
             next(b for b in app.button if b.label == "Analisar mensagem").click().run()

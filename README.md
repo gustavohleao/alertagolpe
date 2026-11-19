@@ -31,13 +31,14 @@ Três camadas independentes, combinadas no resultado:
    frequentes no Brasil, com fontes. A mensagem é comparada a eles por TF-IDF
    e similaridade do cosseno; os 3 mais parecidos vão para a IA como contexto
    (padrão RAG).
-3. **IA generativa** (`analyzer.py`): o Gemini recebe a mensagem como dado não
-   confiável, os sinais e os golpes candidatos, e devolve risco, resumo, sinais
-   com trechos exatos e ações, em JSON.
+3. **IA generativa** (`analyzer.py`): o Gemini (nuvem) ou o Qwen 2.5 3B
+   (LLM local, pelo Ollama) recebe a mensagem como dado não confiável, os sinais
+   e os golpes candidatos, e devolve risco, resumo, sinais com trechos exatos e
+   ações, em JSON.
 
 O aplicativo **valida** a resposta: recusa golpes fora da lista de candidatos,
 descarta sinais cujo trecho não existe na mensagem e avisa quando a IA e as
-regras discordam muito. Sem chave da API, funciona só com as regras locais.
+regras discordam muito. Sem chave da API e sem modelo local, funciona só com as regras locais.
 
 ## Configurar o Gemini
 
@@ -56,6 +57,22 @@ principal continuar sobrecarregado ou deixar de existir, o app tenta os
 modelos reserva de `LLM_FALLBACK_MODELS`, em ordem, e mostra na tela qual
 modelo respondeu. O limite de uso por minuto (429) também aciona o reserva,
 pois é contado por modelo; erros de chave não trocam de modelo.
+
+## Modelo local (Ollama + Qwen)
+
+Com o [Ollama](https://ollama.com) instalado, baixe o modelo e informe-o no `.env`:
+
+```
+ollama pull qwen2.5:3b
+OLLAMA_MODEL=qwen2.5:3b
+```
+
+Assim, o Qwen assume quando o Gemini está sem conexão ou indisponível. Para usá-lo
+como modelo principal, sem enviar a mensagem para fora do computador, acrescente
+`LLM_PROVIDER=ollama`. O app só aceita o Ollama em `localhost`. No notebook do
+grupo (GeForce MX110), ele levou em média 153 s por mensagem e, nas 16 mensagens
+reais de teste, detectou os 14 golpes, mas marcou como golpe também os 2 avisos
+legítimos (`avaliar.py --conjunto avaliacao/reais-teste.json --provedor ollama`).
 
 ## Avaliação
 
@@ -87,7 +104,7 @@ acertou as 20). Para rodar: `avaliar.py --conjunto avaliacao/teste-reserva.json`
 **Mensagens reais.** `src/alertagolpe/exemplos_reais.json` tem 18 mensagens de
 golpe reais, copiadas de reportagens e alertas públicos (com a fonte), que
 alimentam o catálogo. Outras 16 ficaram separadas para teste em
-`avaliacao/reais-teste.json`: a IA acertou 15.
+`avaliacao/reais-teste.json`: a IA acertou 15 com o Gemini; o Qwen local acertou 14, mas marcou tudo como risco alto.
 
 Os conjuntos são pequenos e foram escritos quase todos pelo próprio grupo: o
 resultado demonstra funcionamento, não desempenho garantido em mensagens reais.
@@ -98,15 +115,16 @@ resultado demonstra funcionamento, não desempenho garantido em mensagens reais.
 & '.\.tools\python\python.exe' -m unittest discover -s tests
 ```
 
-56 testes automatizados (regras, catálogo, busca, validação da resposta da IA,
-cliente HTTP e interface). As respostas da IA nos testes são simuladas.
+63 testes automatizados (regras, catálogo, busca, validação da resposta da IA,
+cliente HTTP do Gemini e do Ollama, troca para o modelo local e interface). As respostas da IA nos testes são simuladas.
 
 ## Limites e privacidade
 
 - É um apoio, não uma garantia: golpes novos podem não estar no catálogo, e a
   IA pode errar nos dois sentidos. Na dúvida, confirme pelo canal oficial.
-- Ao analisar com IA, a mensagem é enviada à API Gemini. A interface avisa
-  isso e recomenda apagar dados pessoais antes de colar.
+- Ao analisar com o Gemini, a mensagem é enviada à API do Google. A interface
+  avisa isso e recomenda apagar dados pessoais antes de colar. Com o modelo
+  local (Ollama), ela não sai do computador.
 - O histórico fica só na sessão do navegador; nada é gravado em disco.
 
 ## Instalar em outro computador

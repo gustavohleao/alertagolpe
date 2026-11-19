@@ -38,6 +38,8 @@ def load_settings(root: Path, *, environ: Mapping[str, str] | None = None) -> di
         if name in process_values:
             value = process_values[name]
             settings[name] = "" if value is None else value
-    settings["LLM_PROVIDER"] = "gemini"
+    # gemini (padrão, nuvem) ou ollama (modelo local). Outro valor volta ao padrão.
+    provider = settings["LLM_PROVIDER"].strip().lower()
+    settings["LLM_PROVIDER"] = provider if provider in ("gemini", "ollama") else "gemini"
     return settings
 

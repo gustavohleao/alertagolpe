@@ -1,4 +1,8 @@
-"""Integrações HTTP reais. Sem respostas simuladas como fallback."""
+"""Integrações HTTP reais. Sem respostas simuladas como fallback.
+
+Dois provedores: a API Gemini (nuvem) e o Ollama (modelo local, por exemplo
+qwen2.5:3b), que roda nesta máquina e não envia a mensagem para fora.
+"""
 
 from dataclasses import dataclass, field
 import random
@@ -17,9 +21,11 @@ class ProviderError(RuntimeError):
     funcionar, pois o Gemini conta o limite por modelo. Chave e parâmetros inválidos não se resolvem trocando de modelo.
     """
 
-    def __init__(self, message: str, *, model_unavailable: bool = False):
+    def __init__(self, message: str, *, model_unavailable: bool = False, connection: bool = False):
         super().__init__(message)
         self.model_unavailable = model_unavailable
+        # Sem conexão com o provedor (por exemplo, sem internet): o modelo local pode assumir.
+        self.connection = connection
 
 
 def _normalize_api_key(value: str, *, missing_message: str = "Configure a chave Gemini localmente para gerar respostas.") -> str:
@@ -44,8 +50,8 @@ class ProviderConfig:
     timeout: float = 90
 
     def validate(self) -> None:
-        if self.provider != "gemini":
-            raise ProviderError("A geração está disponível exclusivamente pela API Gemini.")
+        if self.provider not in PROVIDERS:
+            raise ProviderError("Provedor de IA desconhecido. Use gemini ou ollama.")
         if not self.model.strip():
             raise ProviderError("Informe o nome do modelo antes de gerar.")
         if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.:/-]{0,150}", self.model):
@@ -56,6 +62,22 @@ class ProviderConfig:
             _normalize_api_key(self.api_key)
             if "/" in self.model.removeprefix("models/") or ":" in self.model:
                 raise ProviderError("Use apenas o identificador do modelo Gemini.")
+        else:
+            _check_local_url(self.base_url)
+
+
+PROVIDERS = ("gemini", "ollama")
+
+
+def _check_local_url(base_url: str) -> None:
+    """O Ollama só é aceito nesta máquina, para a mensagem não sair do computador."""
+    try:
+        url = httpx.URL(base_url)
+    except (httpx.InvalidURL, TypeError):
+        raise ProviderError("Endereço do Ollama inválido.") from None
+    if (url.scheme != "http" or url.host not in ("localhost", "127.0.0.1", "::1") or url.userinfo
+            or (url.port is not None and not 1 <= url.port <= 65535) or url.path not in ("", "/")):
+        raise ProviderError("O Ollama deve rodar nesta máquina (http://localhost:11434).")
 
 
 @dataclass(frozen=True)
@@ -116,7 +138,7 @@ def _request(client: httpx.Client, method: str, url: str, *, sleep=None, **kwarg
         raise ProviderError(messages.get(code, f"Serviço indisponível (HTTP {code}). Tente novamente mais tarde."),
                             model_unavailable=code in (404, 429) or code >= 500) from None
     except (httpx.RequestError, httpx.InvalidURL):
-        raise ProviderError("Não foi possível conectar ao provedor. Confira a conexão e se o serviço está ativo.") from None
+        raise ProviderError("Não foi possível conectar ao provedor. Confira a conexão e se o serviço está ativo.", connection=True) from None
     try:
         data = response.json()
     except ValueError:
@@ -126,8 +148,41 @@ def _request(client: httpx.Client, method: str, url: str, *, sleep=None, **kwarg
     return data
 
 
+def _generate_ollama(system: str, prompt: str, config: ProviderConfig, connection: httpx.Client, json_output: bool, temperature: float, started: float) -> Generation:
+    data = _request(
+        connection,
+        "POST",
+        f"{config.base_url.rstrip('/')}/api/chat",
+        json={
+            "model": config.model,
+            "messages": [{"role": "system", "content": system}, {"role": "user", "content": prompt}],
+            "stream": False,
+            **({"format": "json"} if json_output else {}),
+            # Contexto de 8192 tokens: o padrão do Ollama cortaria a instrução e os golpes candidatos.
+            "options": {"temperature": temperature, "num_ctx": 8192, "num_predict": 1500},
+        },
+    )
+    message = data.get("message")
+    text = message.get("content") if isinstance(message, dict) else None
+    if not isinstance(text, str) or not text.strip():
+        raise ProviderError("O modelo local retornou uma resposta vazia.")
+    if data.get("done_reason") not in (None, "stop"):
+        raise ProviderError("A geração local foi interrompida. A resposta incompleta não será exibida.")
+    usage = {k: data[k] for k in ("prompt_eval_count", "eval_count") if isinstance(data.get(k), int)}
+    return Generation(text.strip(), config.model, round(perf_counter() - started, 3), usage)
+
+
 def generate(system: str, prompt: str, config: ProviderConfig, *, client: httpx.Client | None = None, json_output: bool = False, temperature: float = 0.2) -> Generation:
     config.validate()
+    if config.provider == "ollama":
+        started = perf_counter()
+        owned = client is None
+        connection = client or httpx.Client(timeout=config.timeout, follow_redirects=False, trust_env=False)
+        try:
+            return _generate_ollama(system, prompt, config, connection, json_output, temperature, started)
+        finally:
+            if owned:
+                connection.close()
     api_key = _normalize_api_key(config.api_key)
     started = perf_counter()
     owned = client is None
@@ -172,13 +227,21 @@ def generate(system: str, prompt: str, config: ProviderConfig, *, client: httpx.
 
 def list_models(provider: str, *, api_key: str = "", base_url: str = "http://localhost:11434", client: httpx.Client | None = None) -> list[str]:
     """Consulta explícita na interface; não envia documentos nem faz geração."""
-    if provider != "gemini":
-        raise ProviderError("A geração está disponível exclusivamente pela API Gemini.")
+    if provider not in PROVIDERS:
+        raise ProviderError("Provedor de IA desconhecido. Use gemini ou ollama.")
+    if provider == "ollama":
+        _check_local_url(base_url)
     if provider == "gemini":
         api_key = _normalize_api_key(api_key, missing_message="Informe sua chave localmente para consultar os modelos.")
     owned = client is None
-    connection = client or httpx.Client(timeout=20, follow_redirects=False, trust_env=True)
+    connection = client or httpx.Client(timeout=20, follow_redirects=False, trust_env=provider == "gemini")
     try:
+        if provider == "ollama":
+            data = _request(connection, "GET", f"{base_url.rstrip('/')}/api/tags")
+            raw_models = data.get("models", [])
+            if not isinstance(raw_models, list):
+                raise ProviderError("O Ollama retornou uma lista de modelos inválida.")
+            models = [item.get("name") for item in raw_models if isinstance(item, dict)]
         if provider == "gemini":
             data = _request(connection, "GET", "https://generativelanguage.googleapis.com/v1beta/models", headers={"x-goog-api-key": api_key}, params={"pageSize": 100})
             raw_models = data.get("models", [])

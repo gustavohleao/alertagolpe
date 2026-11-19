@@ -4,7 +4,7 @@
 **Entrega:** 19 de novembro de 2026  
 **Grupo:** Gustavo Henrique Leão, Otavio Aparecido Pegorin, Leonardo Gabriel Lopes, Felipe Gabriel Tagliabues e Murilo Rodrigues Lima  
 **Repositório:** https://github.com/gustavohleao/alertagolpe  
-**Versão do relatório:** 18/11/2026
+**Versão do relatório:** 19/11/2026
 
 > **Resumo.** O AlertaGolpe ajuda pessoas comuns a reconhecer golpes em
 > mensagens de WhatsApp, SMS e e-mail. O usuário cola a mensagem suspeita e
@@ -21,7 +21,13 @@
 > de reserva com 20 mensagens inéditas, não usadas em nenhum ajuste, o app
 > também acertou todas. Por fim, o catálogo foi alimentado com 18 mensagens
 > de golpe reais, copiadas de reportagens e alertas públicos; nas 16 mensagens
-> reais separadas para teste, o app acertou 15.
+> reais separadas para teste, o app acertou 15. A aplicação também roda com um
+> **modelo local**, o Qwen 2.5 de 3 bilhões de parâmetros, servido pelo Ollama
+> no próprio computador: sem internet e sem enviar a mensagem para fora. Ele
+> assume quando o Gemini está sem conexão. Nas mesmas 16 mensagens reais, ele
+> detectou os 14 golpes, mas também marcou como golpe os 2 avisos legítimos, e
+> levou em média 153 s por mensagem no notebook do grupo; por isso o Gemini
+> continua como modelo principal.
 
 ---
 
@@ -113,6 +119,7 @@ delimitado para manter a solução verificável:
 | Ferramenta | Função |
 | --- | --- |
 | **API Gemini (Google)**, modelo `gemini-3.5-flash-lite`, via REST `generateContent` | Interpreta a mensagem junto com os sinais automáticos e os golpes candidatos; classifica o risco, aponta sinais com trechos exatos, indica o golpe parecido e sugere ações. Usada em modo JSON (`responseMimeType: application/json`). |
+| **Qwen 2.5 3B (Alibaba), LLM local servido pelo Ollama**, modelo `qwen2.5:3b` (quantizado em 4 bits), via REST `/api/chat` em `localhost` | Mesma função do Gemini, com o mesmo prompt e a mesma validação, rodando no próprio computador. Assume automaticamente quando o Gemini está sem conexão ou indisponível; com `LLM_PROVIDER=ollama`, é o modelo principal e a mensagem não sai da máquina. Usado com `format: json` e contexto de 8192 tokens. |
 
 ### 2.2 IA generativa no desenvolvimento
 
@@ -128,7 +135,8 @@ delimitado para manter a solução verificável:
 | Python | 3.12.10 | Linguagem da aplicação |
 | Streamlit | 1.67.0 | Interface web |
 | scikit-learn | 1.9.1 | TF-IDF e similaridade do cosseno |
-| httpx | 0.28.1 | Chamadas HTTP à API Gemini |
+| httpx | 0.28.1 | Chamadas HTTP à API Gemini e ao Ollama |
+| Ollama | 0.40.16 | Servidor local do modelo Qwen 2.5 3B |
 | python-dotenv | 1.2.4 | Leitura da configuração privada (`.env`) |
 
 ---
@@ -202,8 +210,9 @@ flowchart LR
     AN --> SG[Regras locais<br/>signals.py]
     AN --> IDX[Busca TF-IDF<br/>retrieval.py]
     CAT[Catálogo de 30 golpes<br/>catalog.py] --> IDX
-    AN --> GEM[Cliente Gemini<br/>providers.py]
-    GEM -->|HTTPS| API[(API Gemini)]
+    AN --> GEM[Cliente de IA<br/>providers.py]
+    GEM -->|HTTPS| API[(API Gemini<br/>nuvem)]
+    GEM -->|localhost| OLL[(Ollama · Qwen 2.5 3B<br/>nesta máquina)]
     CFG[.env no servidor<br/>chave e modelo] --> GEM
 ```
 
@@ -213,10 +222,10 @@ flowchart LR
 flowchart TD
     A[Mensagem colada] --> B[Regras locais: sinais e pontuação]
     A --> C[Busca no catálogo: 3 golpes mais parecidos]
-    B --> D{Chave da API configurada?}
+    B --> D{IA configurada?}
     C --> D
     D -->|não| E[Resultado só com regras<br/>identificado como sem IA]
-    D -->|sim| F[Gemini em modo JSON:<br/>risco, sinais, golpe, ações<br/>modelo reserva se indisponível]
+    D -->|sim| F[Gemini em modo JSON:<br/>risco, sinais, golpe, ações<br/>reserva: outro Gemini;<br/>sem internet: Qwen local]
     F --> G{Validação}
     G -->|JSON quebrado| H[Pede de novo uma vez]
     H --> G
@@ -281,14 +290,16 @@ O prompt completo está no Apêndice A. Princípios:
 | Modelos reserva automáticos | Se o principal continuar sobrecarregado, atingir o limite de uso por minuto (HTTP 429, contado por modelo) ou deixar de existir (como ocorreu com um modelo antigo), o app tenta `gemini-3.1-flash-lite` e depois `gemini-flash-lite-latest`, escolhidos por um teste de disponibilidade em 18/11 (respostas em 0,6 a 2,9 s); erros de chave não trocam de modelo. Em teste real com o principal indisponível, o reserva respondeu corretamente em 8,3 s |
 | Sinais com trecho exato | Impede que o modelo atribua à mensagem algo que ela não diz |
 | Aviso de envio à API na tela | A mensagem pode conter dados pessoais; o usuário é avisado antes de enviar |
-| Modo sem IA | Sem chave, a aplicação continua útil, com as regras e o catálogo |
+| Modelo local como reserva (Qwen 2.5 3B via Ollama) | Sem internet, ou com o Gemini fora do ar, a análise com IA continua, e a mensagem não sai do computador. O Qwen de 3B foi escolhido por caber na placa de vídeo do notebook do grupo (2 GB); o endereço do Ollama só é aceito se for `localhost`, para a mensagem nunca ser enviada a outro servidor. Ele não é o principal porque, no teste com mensagens reais, levou em média 153 s por mensagem, contra cerca de 8 s do Gemini, e marcou como golpe também os avisos legítimos (seção 4.1) |
+| Modo sem IA | Sem chave e sem modelo local, a aplicação continua útil, com as regras e o catálogo |
 
 ### 3.8 Testes automatizados
 
-A aplicação tem **56 testes automatizados** (`python -m unittest`): integridade
+A aplicação tem **63 testes automatizados** (`python -m unittest`): integridade
 do catálogo, recuperação do golpe certo para cada exemplo, cada regra local,
 validação da resposta do modelo (risco inválido, golpe fora da lista, trecho
-inventado, JSON quebrado), troca para modelos reserva, tentativa de injeção de instruções, modo sem IA,
+inventado, JSON quebrado), troca para modelos reserva, troca para o modelo
+local sem internet, restrição do Ollama a `localhost`, tentativa de injeção de instruções, modo sem IA,
 cliente HTTP e interface — incluindo a garantia de que texto gerado pelo modelo
 não é interpretado como HTML ou imagem remota. As respostas do modelo nesses
 testes são simuladas; o desempenho real é medido na seção 4.
@@ -473,7 +484,36 @@ um pedido, e só pelo texto é igual a um aviso verdadeiro do governo. Ele não 
 forçado, para não criar alarmes falsos. No teste de ajuste, a rodada final teve
 um "médio" para uma legítima ("olha esse vídeo… youtube.com/…", 54/55).
 
-**Testes preliminares** com mensagens avulsas confirmaram o comportamento: o
+**Modelo local (Qwen 2.5 3B, via Ollama).** Para a análise com IA funcionar sem
+internet e sem enviar a mensagem para fora, o app passou a aceitar um LLM local
+servido pelo Ollama, com o mesmo prompt (`alertagolpe-v5`), o mesmo catálogo e
+a mesma validação. O modelo `qwen2.5:3b`, já instalado no notebook do grupo,
+foi avaliado nas 16 mensagens reais de teste, as mesmas usadas para o Gemini:
+
+| Teste com 16 mensagens reais | Só regras | Gemini (nuvem) | Qwen 2.5 3B (local) |
+| --- | --- | --- | --- |
+| Detectadas corretamente | 6/16 | 15/16 | **14/16** |
+| Golpes detectados | 5/14 | 13/14 | 14/14 |
+| Golpes como risco alto | 0/14 | 12/14 | 14/14 |
+| Tipo de golpe correto | 4/5 | 11/13 | 10/14 |
+| Alarmes falsos | 1/2 | 0/2 | 2/2 |
+| Tempo médio por mensagem | < 0,1 s | 8,4 s | 153 s (máx. 216 s) |
+
+O Qwen classificou **todas as 16 mensagens como risco alto**, inclusive os dois
+avisos legítimos (da Enel e da Vivo, alertando contra SMS falsos), que ele
+confundiu com os golpes que esses avisos descrevem. Assim, os 14 golpes
+detectados não mostram que ele separa bem golpe de mensagem verdadeira: neste
+teste, responder "alto" para tudo daria o mesmo placar. O tipo de golpe ficou
+certo em 10 dos 14. O Gemini, com o mesmo prompt, deixou passar um golpe, mas
+não deu alarme falso.
+
+O tempo do Qwen vem do hardware: o notebook tem uma placa de vídeo de entrada
+(GeForce MX110, 2 GB), e o prompt, com a instrução, os sinais e três golpes
+candidatos com exemplos reais, passa de 3 mil tokens. Por isso o Gemini
+continua como modelo principal, e o Qwen entra como reserva sem internet ou
+como opção para quem não quer enviar a mensagem para fora.
+
+**Testes preliminares com o Gemini**, com mensagens avulsas, confirmaram o comportamento: o
 falso filho pedindo Pix foi classificado como alto (golpe G01, 5,7 s); uma
 confirmação de consulta odontológica, como baixo, sem alarme (9,1 s); uma falsa
 mensagem da Receita Federal, como alto (G13), com a observação de que sites do
@@ -511,6 +551,17 @@ tentativas e o motor de busca TF-IDF —, já com testes automatizados, que
 puderam ser reaproveitados com poucas mudanças. *Limitações:* a documentação
 que produziu ficou extensa, cheia de ressalvas, e precisou ser reescrita.
 
+**Qwen 2.5 3B via Ollama (LLM local).**
+*Vantagens:* roda no próprio computador, sem internet, sem chave, sem custo e
+sem limite de chamadas; a mensagem não sai da máquina; o Ollama oferece modo
+JSON e uma API simples, o que permitiu reaproveitar o prompt e a validação.
+*Limitações observadas:* é um modelo pequeno (3 bilhões de parâmetros, contra
+um modelo de nuvem muito maior): no teste com mensagens reais, marcou todas
+como risco alto, inclusive dois avisos legítimos contra golpes, e, no notebook
+do grupo, levou em média 153 s por mensagem; o desempenho depende do hardware
+de quem usa.
+*Impacto:* ficou como reserva, e não como modelo principal.
+
 **Claude Code.**
 *Vantagens:* diagnosticou falhas testando a API diretamente (separou "chave
 inválida" de "modelo sobrecarregado"), reproduziu erros antes de corrigi-los,
@@ -538,8 +589,10 @@ reconhecer o próximo golpe sozinha.
 - **Cobertura:** 30 golpes; variações novas dependem só do modelo.
 - **Formato:** analisa apenas texto; golpes chegam também como imagem, áudio e
   ligação.
-- **Dependência do provedor:** sem a API, restam as regras, que detectaram
-  metade dos golpes na avaliação. O modelo também muda com atualizações do
+- **Dependência do provedor:** sem a API, o modelo local (Qwen 2.5 3B) assume,
+  mas leva em média 153 s por mensagem no notebook do grupo e tende a marcar
+  como golpe também avisos legítimos; sem ele, restam as
+  regras, que detectaram metade dos golpes na avaliação. O modelo também muda com atualizações do
   provedor (19/11): os testes precisam ser repetidos antes de cada uso
   importante, como a apresentação.
 - **Avaliação:** conjuntos pequenos; as mensagens reais (34) vêm de reportagens, que tendem a mostrar os golpes mais típicos; não houve teste com usuários.
@@ -572,9 +625,11 @@ reconhecer o próximo golpe sozinha.
 ## 5. Ética e uso de IA
 
 **Dados pessoais.** Mensagens podem conter nomes, telefones, CPF ou dados
-bancários. Na análise com IA, a mensagem é enviada à API Gemini; a interface
-avisa isso **antes** do envio e recomenda apagar dados pessoais. A aplicação não
-grava mensagens nem resultados em disco.
+bancários. Na análise com o Gemini, a mensagem é enviada à API do Google; a
+interface avisa isso **antes** do envio e recomenda apagar dados pessoais. Com o
+modelo local (Qwen 2.5 3B via Ollama), a análise acontece no próprio computador
+e a mensagem não é enviada a nenhum serviço externo; o app só aceita o Ollama
+em `localhost`. A aplicação não grava mensagens nem resultados em disco.
 
 **Responsabilidade pelo resultado.** A aplicação nunca afirma que uma mensagem
 é segura de forma absoluta: o risco baixo vem acompanhado da orientação de
@@ -596,7 +651,7 @@ gravações.
 
 **Uso de IA na produção do trabalho:**
 
-1. **Dentro da aplicação:** API Gemini, como descrito acima.
+1. **Dentro da aplicação:** API Gemini e, como reserva local, Qwen 2.5 3B via Ollama, como descrito acima.
 2. **Código e testes:** produzidos com assistência do Codex (módulos de base) e
    do Claude Code (o restante da aplicação), sob orientação e revisão de Gustavo Henrique Leão.
 3. **Catálogo e conjunto de avaliação:** redigidos com assistência de IA a
@@ -627,6 +682,8 @@ foi tão importante quanto o próprio modelo para tornar o resultado confiável.
 
 - Analisar **capturas de tela** de conversas, usando a capacidade multimodal do
   Gemini.
+- Testar modelos locais maiores ou mais rápidos (em um computador com placa de
+  vídeo melhor), para o modo local poder ser o principal.
 - Integração direta com o WhatsApp (encaminhar a mensagem para um número de
   verificação) ou extensão de navegador para e-mail.
 - Avaliação com **mensagens reais**, anonimizadas, e com usuários,
@@ -641,6 +698,8 @@ foi tão importante quanto o próprio modelo para tornar o resultado confiável.
 
 - Lewis, P. et al. *Retrieval-Augmented Generation for Knowledge-Intensive NLP
   Tasks.* NeurIPS, 2020.
+- Qwen Team. *Qwen2.5 Technical Report.* arXiv:2412.15115, 2024.
+- Ollama — documentação da API: https://github.com/ollama/ollama/blob/main/docs/api.md
 - Federação de bancos alerta para golpes a contas bancárias (O Povo, 2024):
   https://www.opovo.com.br/noticias/economia/2024/04/02/federacao-de-bancos-alerta-para-golpes-a-contas-bancarias-veja-dicas.html
 - Febraban divulga os 10 golpes mais aplicados contra clientes bancários em 2024
@@ -789,7 +848,9 @@ DADOS: {mensagem, sinais_automaticos: [{sinal, trecho}], golpes_candidatos: [{id
 até 3 novas tentativas para erros HTTP 500, 502, 503 e 504 (esperas de 2, 5 e
 10 s); 1 nova tentativa em caso de tempo esgotado e até 2 em caso de JSON inválido;
 se o modelo seguir indisponível (5xx, 429, tempo esgotado ou 404), os modelos reserva
-`gemini-3.1-flash-lite` e `gemini-flash-lite-latest` são tentados em ordem.
+`gemini-3.1-flash-lite` e `gemini-flash-lite-latest` são tentados em ordem; sem conexão ou
+com todos indisponíveis, o modelo local `qwen2.5:3b` (Ollama, `http://localhost:11434/api/chat`,
+`format: json`, `temperature = 0`, `num_ctx = 8192`, `num_predict = 1500`, tempo limite de 300 s).
 
 ## Apêndice B — Regras locais
 
@@ -816,7 +877,11 @@ Nível local: alto ≥ 55 pontos; médio ≥ 25; baixo abaixo de 25.
 py -3.12 -m venv .venv
 & '.\.venv\Scripts\python.exe' -m pip install -r requirements-lock.txt
 # Criar .env a partir de .env.example com GEMINI_API_KEY e LLM_MODEL
+# Modelo local (opcional): instalar o Ollama e baixar o modelo
+ollama pull qwen2.5:3b
+# No .env: OLLAMA_MODEL=qwen2.5:3b (reserva) ou também LLM_PROVIDER=ollama (principal)
 & '.\.venv\Scripts\python.exe' -m streamlit run app.py
 & '.\.venv\Scripts\python.exe' -m unittest discover -s tests
 & '.\.venv\Scripts\python.exe' avaliar.py
+& '.\.venv\Scripts\python.exe' avaliar.py --conjunto avaliacao/reais-teste.json --provedor ollama
 ```

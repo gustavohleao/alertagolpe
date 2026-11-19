@@ -194,7 +194,18 @@ def _generate_with_fallback(prompt: str, config: ProviderConfig, fallback_models
                 raise
 
 
-def analyze(message: str, config: ProviderConfig | None, fallback_models: tuple[str, ...] = ()) -> Analysis:
+def _generate_any(prompt: str, config: ProviderConfig, fallback_models: tuple[str, ...], local: ProviderConfig | None):
+    """Gemini e reservas; sem conexão ou com todos indisponíveis, o modelo local (Ollama), se configurado."""
+    try:
+        return _generate_with_fallback(prompt, config, fallback_models)
+    except ProviderError as exc:
+        if local is None or config.provider == "ollama" or not (exc.connection or exc.model_unavailable):
+            raise
+    return generate(SYSTEM_PROMPT, prompt, local, json_output=True, temperature=0.0), local
+
+
+def analyze(message: str, config: ProviderConfig | None, fallback_models: tuple[str, ...] = (),
+            local_fallback: ProviderConfig | None = None) -> Analysis:
     if not isinstance(message, str) or not message.strip():
         raise AnalysisError("Cole a mensagem que você quer analisar.")
     message = message.strip()
@@ -231,7 +242,7 @@ DADOS:
     # (2 de 32, depois 1 de 36 duas vezes seguidas). Até duas novas tentativas; as demais validações não são repetidas.
     primary_model = config.model
     for attempt in range(3):
-        generation, config = _generate_with_fallback(prompt, config, fallback_models)
+        generation, config = _generate_any(prompt, config, fallback_models, local_fallback)
         try:
             data = _json(generation.text)
             break

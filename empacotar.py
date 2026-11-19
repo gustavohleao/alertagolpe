@@ -6,7 +6,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parent
 FILES = ["app.py", "README.md", "requirements.txt", "requirements-lock.txt", ".env.example", ".gitignore", "iniciar.ps1", "verificar.py", "avaliar.py", "empacotar.py", ".streamlit/config.toml", "avaliacao/mensagens.json", "avaliacao/teste-ajuste.json", "avaliacao/teste-reserva.json", "avaliacao/reais-teste.json", "src/alertagolpe/exemplos_reais.json"]
 FOLDERS = ["src", "tests", "docs", "assets"]
-DEMO_RECORDS = ["avaliacao-resultados.json", "Relatorio-AlertaGolpe.docx", "Relatorio-AlertaGolpe.pdf"]
+DEMO_RECORDS = ["avaliacao-resultados.json", "avaliacao-reais-teste-ollama.json", "Relatorio-AlertaGolpe.docx", "Relatorio-AlertaGolpe.pdf"]
 
 
 def main():

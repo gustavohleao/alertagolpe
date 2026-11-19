@@ -32,8 +32,16 @@ def _env_timeout(settings: dict[str, str]) -> int:
         return 90
 
 
+def _ai_ready(config: ProviderConfig) -> bool:
+    return config.provider == "ollama" or bool(config.api_key)
+
+
+def _provider_label(provider: str, model: str = "") -> str:
+    return f"{model} local (Ollama)" if provider == "ollama" else "Gemini"
+
+
 def _ready_config(config: ProviderConfig) -> ProviderConfig:
-    if not config.model:
+    if not config.model and config.provider == "gemini":
         signature = sha256(config.api_key.encode("utf-8")).hexdigest()
         cached = st.session_state.get("automatic_model")
         if cached and cached[0] == signature:
@@ -62,8 +70,9 @@ def _sidebar(config: ProviderConfig) -> None:
         for item in reversed(history[-6:]):
             _, label, _, tone = RISK_UI[item["risk"]]
             html(f'<div class="hist-item"><span class="hist-badge {tone}">{label.replace("RISCO ", "")}</span><span class="hist-text">{safe(item["preview"])}</span></div>')
-        if config.api_key:
-            html(f'<div class="ai-status online"><span class="status-dot"></span><div><strong>IA conectada</strong><small>{safe(config.model or "Modelo automático · Gemini")}</small></div></div>')
+        if _ai_ready(config):
+            label = _provider_label(config.provider, config.model) if config.provider == "ollama" else (config.model or "Modelo automático · Gemini")
+            html(f'<div class="ai-status online"><span class="status-dot"></span><div><strong>IA conectada</strong><small>{safe(label)}</small></div></div>')
         else:
             st.warning("IA não configurada: o app fará apenas a análise local por regras.")
         if st.button("Limpar sessão", use_container_width=True, key="clear_session", icon=":material/restart_alt:"):
@@ -74,7 +83,7 @@ def _sidebar(config: ProviderConfig) -> None:
 
 def _risk_banner(analysis) -> None:
     ic, label, sub, tone = RISK_UI[analysis.risk]
-    source = "Análise com IA (Gemini) + regras locais" if analysis.used_ai else "Análise local por regras (sem IA)"
+    source = f"Análise com IA ({_provider_label(analysis.provider, analysis.model)}) + regras locais" if analysis.used_ai else "Análise local por regras (sem IA)"
     html(f'<div class="risk-banner {tone}"><div class="risk-icon">{icon(ic, 30)}</div><div class="risk-copy">'
          f'<div class="risk-label">{label}</div><div class="risk-sub">{safe(sub)}</div>'
          f'<p>{safe(analysis.summary)}</p><div class="risk-source">{safe(source)}</div></div></div>')
@@ -133,19 +142,24 @@ def _result(analysis) -> None:
                            file_name="alertagolpe-analise.json", mime="application/json", icon=":material/download:", use_container_width=True)
 
 
-def _analyze_tab(config: ProviderConfig, fallback_models: tuple[str, ...] = ()) -> None:
+def _analyze_tab(config: ProviderConfig, fallback_models: tuple[str, ...] = (), local_fallback: ProviderConfig | None = None) -> None:
     with st.container(key="composer"):
         section_heading("01", "Cole a mensagem suspeita", "WhatsApp, SMS, e-mail ou post, até 10 mil caracteres. Pode colar exatamente como recebeu.")
         message = st.text_area("Mensagem", key="message_input", height=180, max_chars=MAX_MESSAGE_CHARS, label_visibility="collapsed",
                                placeholder="Ex.: Oi, troquei de número, consegue me fazer um Pix urgente?")
         submitted = st.button("Analisar mensagem", type="primary", use_container_width=True, icon=":material/shield:")
-        st.caption("Ao analisar, a mensagem é enviada à API Gemini. Apague nomes, CPF, números de cartão e outros dados pessoais antes de colar.")
+        if config.provider == "ollama":
+            st.caption("A análise usa um modelo de IA local (Ollama): a mensagem não sai deste computador. Pode levar alguns minutos.")
+        else:
+            st.caption("Ao analisar, a mensagem é enviada à API Gemini. Apague nomes, CPF, números de cartão e outros dados pessoais antes de colar.")
     if submitted:
         st.session_state.pop("analysis", None)
         try:
-            active = _ready_config(config) if config.api_key else None
-            with st.spinner("Procurando sinais de golpe… Mensagens longas podem levar até 30 segundos."):
-                analysis = analyze(message, active, fallback_models)
+            active = _ready_config(config) if _ai_ready(config) else local_fallback
+            wait = "O modelo local pode levar alguns minutos." if (active and active.provider == "ollama") or local_fallback else "Mensagens longas podem levar até 30 segundos."
+            with st.spinner(f"Procurando sinais de golpe… {wait}"):
+                gemini_backups = fallback_models if active and active.provider == "gemini" else ()
+                analysis = analyze(message, active, gemini_backups, local_fallback)
             st.session_state["analysis"] = analysis
             history = st.session_state.setdefault("history", [])
             history.append({"risk": analysis.risk, "preview": " ".join(analysis.message.split())[:46] + "…"})
@@ -175,26 +189,37 @@ def _about_tab() -> None:
         html('<div class="about-flow">' + "".join(f'<div class="flow-step" style="--i:{n}"><span class="flow-icon">{icon(ic,18)}</span><strong>{safe(t)}</strong><small>{safe(d)}</small></div>' for n, (ic, t, d) in enumerate(stages)) + '</div>')
         st.write("**1. Regras locais.** Expressões que identificam pedidos de Pix, códigos, links, urgência, troca de número, prêmios e outros sinais. Funcionam sem internet e geram uma pontuação de 0 a 100.")
         st.write("**2. Busca no catálogo.** A mensagem é comparada aos golpes catalogados por TF-IDF e similaridade do cosseno — a mesma técnica de recuperação usada em sistemas RAG. Os três golpes mais parecidos são enviados à IA como contexto.")
-        st.write("**3. IA generativa.** O Gemini recebe a mensagem (como dado não confiável), os sinais e os candidatos, e devolve risco, resumo, sinais com trechos exatos e ações, em JSON.")
+        st.write("**3. IA generativa.** O Gemini (na nuvem) ou o Qwen 2.5 (local, pelo Ollama) recebe a mensagem (como dado não confiável), os sinais e os candidatos, e devolve risco, resumo, sinais com trechos exatos e ações, em JSON. Sem internet, o modelo local assume.")
         st.write("**4. Validação.** O app recusa golpes fora da lista de candidatos e descarta sinais cujo trecho não existe na mensagem. Se a IA e as regras discordarem muito, um aviso aparece.")
     with st.container(key="about_limits"):
         st.markdown("### Limites")
         st.write("A análise é um apoio, não uma garantia. Golpes novos podem não estar no catálogo, mensagens legítimas podem ser marcadas como suspeitas e vice-versa. Na dúvida, confirme sempre pelo canal oficial da empresa ou ligando para a pessoa.")
         st.markdown("### Privacidade")
-        st.write("A mensagem é enviada à API Gemini para a análise com IA. O histórico fica só nesta sessão do navegador e não é gravado em disco. Evite colar dados pessoais.")
+        st.write("Com o Gemini, a mensagem é enviada à API do Google para a análise com IA. Com o modelo local (Ollama), ela não sai deste computador. O histórico fica só nesta sessão do navegador e não é gravado em disco. Evite colar dados pessoais.")
 
 
 def render_app(root: Path) -> None:
     settings = load_settings(root)
     st.set_page_config(page_title="AlertaGolpe · Confira antes de clicar", page_icon="🛡️", layout="wide", initial_sidebar_state="auto")
     st.html(f'<style>{(root / "assets" / "styles.css").read_text(encoding="utf-8")}</style>')
-    config = ProviderConfig("gemini", settings["LLM_MODEL"].strip(), settings["GEMINI_API_KEY"].strip(), timeout=_env_timeout(settings))
-    status = '<span class="top-pill online"><span class="status-dot"></span>Gemini online</span>' if config.api_key else '<span class="top-pill offline"><span class="status-dot"></span>Somente regras locais</span>'
+    local_model = settings["OLLAMA_MODEL"].strip()
+    local = ProviderConfig("ollama", local_model, base_url=settings["OLLAMA_BASE_URL"].strip(), timeout=300) if local_model else None
+    if settings["LLM_PROVIDER"] == "ollama":
+        config = local or ProviderConfig("ollama", "qwen2.5:3b", base_url=settings["OLLAMA_BASE_URL"].strip(), timeout=300)
+        local = None
+    else:
+        config = ProviderConfig("gemini", settings["LLM_MODEL"].strip(), settings["GEMINI_API_KEY"].strip(), timeout=_env_timeout(settings))
+    if config.provider == "ollama":
+        status = f'<span class="top-pill online"><span class="status-dot"></span>{safe(_provider_label("ollama", config.model))}</span>'
+    elif config.api_key:
+        status = '<span class="top-pill online"><span class="status-dot"></span>Gemini online' + (" · reserva local" if local else "") + '</span>'
+    else:
+        status = '<span class="top-pill offline"><span class="status-dot"></span>' + ("Somente IA local" if local else "Somente regras locais") + '</span>'
     html(f'<div class="workspace-topbar"><div class="breadcrumb">{icon("shield",16)} AlertaGolpe <span class="slash">/</span><strong>Analisar mensagem</strong></div><div class="topbar-right"><span class="workspace-label">{icon("check",14)} Sinais explicados</span>{status}</div></div>')
     hero()
     analyze_tab, catalog_tab, about_tab = st.tabs([":material/shield: Analisar mensagem", ":material/menu_book: Golpes conhecidos", ":material/info: Como funciona"])
     with analyze_tab:
-        _analyze_tab(config, _fallback_models(settings))
+        _analyze_tab(config, _fallback_models(settings), local)
     with catalog_tab:
         _catalog_tab()
     with about_tab:

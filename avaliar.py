@@ -60,7 +60,13 @@ def main() -> None:
     messages = data["mensagens"]
     settings = load_settings(ROOT)
     results = [run("local", messages, None)]
-    if "--local" not in sys.argv and settings["GEMINI_API_KEY"].strip():
+    local_llm = "--provedor" in sys.argv and sys.argv[sys.argv.index("--provedor") + 1] == "ollama"
+    if "--local" not in sys.argv and local_llm:
+        # Modelo local pelo Ollama (ex.: qwen2.5:3b): sem internet e sem modelos reserva.
+        model = settings["OLLAMA_MODEL"].strip() or "qwen2.5:3b"
+        results.append(run("ia", messages, ProviderConfig("ollama", model, base_url=settings["OLLAMA_BASE_URL"].strip(), timeout=300)))
+        settings["LLM_MODEL"] = f"ollama/{model}"
+    elif "--local" not in sys.argv and settings["GEMINI_API_KEY"].strip():
         config = ProviderConfig("gemini", settings["LLM_MODEL"].strip(), settings["GEMINI_API_KEY"].strip(), timeout=90)
         fallbacks = tuple(m.strip() for m in settings["LLM_FALLBACK_MODELS"].split(",") if m.strip())
         results.append(run("ia", messages, config, fallbacks))
@@ -69,6 +75,8 @@ def main() -> None:
     for key in keys:
         print(f"  {key:24}" + "".join(f"{str(r[key]):>12}" for r in results))
     out = ROOT / "output" / ("avaliacao-resultados.json" if "--conjunto" not in sys.argv else f"avaliacao-{source.stem}.json")
+    if local_llm:
+        out = out.with_name(out.stem + "-ollama.json")
     out.parent.mkdir(exist_ok=True)
     out.write_text(json.dumps({"data": datetime.now(timezone.utc).isoformat(), "modelo": settings["LLM_MODEL"],
                                "conjunto": data["descricao"], "resultados": results}, ensure_ascii=False, indent=2), encoding="utf-8")

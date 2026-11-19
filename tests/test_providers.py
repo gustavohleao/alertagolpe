@@ -38,11 +38,36 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(bodies[0]["generationConfig"]["responseMimeType"], "application/json")
         self.assertNotIn("responseMimeType", bodies[1]["generationConfig"])
 
-    def test_local_provider_is_rejected(self):
+    def test_ollama_request_and_response(self):
+        def handler(request):
+            self.assertEqual(str(request.url), "http://localhost:11434/api/chat")
+            body = json.loads(request.content)
+            self.assertEqual(body["model"], "qwen2.5:3b")
+            self.assertEqual([m["role"] for m in body["messages"]], ["system", "user"])
+            self.assertEqual((body["format"], body["stream"], body["options"]["num_ctx"]), ("json", False, 8192))
+            return httpx.Response(200, json={"message": {"role": "assistant", "content": '{"risco": "alto"}'}, "done": True, "done_reason": "stop", "eval_count": 9})
+        result = generate("s", "p", ProviderConfig("ollama", "qwen2.5:3b"), client=self.client(handler), json_output=True)
+        self.assertEqual((result.text, result.usage["eval_count"]), ('{"risco": "alto"}', 9))
+
+    def test_ollama_lists_local_models(self):
+        handler = lambda r: httpx.Response(200, json={"models": [{"name": "qwen2.5:3b"}, {"name": "llama3.2:1b"}]})
+        self.assertEqual(list_models("ollama", client=self.client(handler)), ["llama3.2:1b", "qwen2.5:3b"])
+
+    def test_ollama_must_run_on_this_machine_and_unknown_provider_is_rejected(self):
+        for url in ("http://servidor-externo:11434", "https://localhost:11434", "http://10.0.0.5:11434"):
+            with self.subTest(url=url), self.assertRaises(ProviderError):
+                ProviderConfig("ollama", "qwen2.5:3b", base_url=url).validate()
         with self.assertRaises(ProviderError):
-            ProviderConfig("ollama", "modelo-local").validate()
+            ProviderConfig("outro", "modelo").validate()
         with self.assertRaises(ProviderError):
-            list_models("ollama")
+            list_models("ollama", base_url="http://servidor-externo:11434")
+
+    def test_connection_failure_is_marked(self):
+        def offline(request):
+            raise httpx.ConnectError("sem rede")
+        with self.assertRaises(ProviderError) as caught:
+            generate("s", "p", ProviderConfig("gemini", "modelo", "chave-ficticia"), client=self.client(offline))
+        self.assertTrue(caught.exception.connection)
 
     def test_timeout_and_connection_errors_are_sanitized(self):
         for error in [httpx.ReadTimeout("segredo"), httpx.ConnectError("segredo")]:
