@@ -27,7 +27,7 @@ Três camadas independentes, combinadas no resultado:
    ou regularização — e 1 sinal
    de legitimidade (mandar usar o aplicativo oficial, sem link nem pedido de
    dados). Funcionam sem internet e geram uma pontuação de 0 a 100.
-2. **Catálogo de golpes + busca** (`catalog.py`, `retrieval.py`): 21 golpes
+2. **Catálogo de golpes + busca** (`catalog.py`, `retrieval.py`): 30 golpes
    frequentes no Brasil, com fontes. A mensagem é comparada a eles por TF-IDF
    e similaridade do cosseno; os 3 mais parecidos vão para a IA como contexto
    (padrão RAG).
@@ -64,20 +64,20 @@ pois é contado por modelo; erros de chave não trocam de modelo.
 & '.\.tools\python\python.exe' avaliar.py --local  # só regras locais
 ```
 
-O conjunto `avaliacao/mensagens.json` tem 27 golpes e 18 mensagens legítimas,
+O conjunto `avaliacao/mensagens.json` tem 36 golpes e 20 mensagens legítimas,
 quase todos fictícios e escritos a partir de alertas públicos. Duas mensagens
 são reais, sem dados pessoais: um aviso de fatura do Nubank, que gerou um
 alarme falso, e um e-mail de falsa regularização do MEI, que recebeu só risco
 médio. Os dois erros foram corrigidos.
-Resultado em 18/11/2026 com `gemini-3.5-flash-lite` e modelos reserva:
+Resultado em 19/11/2026 com `gemini-3.5-flash-lite` e modelos reserva:
 
 | | Só regras locais | Com IA |
 | --- | --- | --- |
-| Golpes detectados | 14/27 | 27/27 |
-| Tipo de golpe correto | 13/14 | 27/27 |
-| Alarmes falsos | 3/18 | 0/18 |
-| Acurácia | 29/45 | 45/45 |
-| Tempo médio | < 0,1 s | 6,6 s |
+| Golpes detectados | 18/36 | 36/36 |
+| Tipo de golpe correto | 16/18 | 36/36 |
+| Alarmes falsos | 3/20 | 0/19 |
+| Acurácia | 35/56 | 55/55 (+1 falha do serviço) |
+| Tempo médio | < 0,1 s | 9,9 s |
 
 Há também dois testes extras com mensagens inéditas: `avaliacao/teste-ajuste.json`
 (56 mensagens, usado para encontrar falhas e ajustar o catálogo) e
@@ -87,7 +87,7 @@ acertou as 20). Para rodar: `avaliar.py --conjunto avaliacao/teste-reserva.json`
 **Mensagens reais.** `src/alertagolpe/exemplos_reais.json` tem 18 mensagens de
 golpe reais, copiadas de reportagens e alertas públicos (com a fonte), que
 alimentam o catálogo. Outras 16 ficaram separadas para teste em
-`avaliacao/reais-teste.json`: a IA acertou as 16.
+`avaliacao/reais-teste.json`: a IA acertou 15.
 
 Os conjuntos são pequenos e foram escritos quase todos pelo próprio grupo: o
 resultado demonstra funcionamento, não desempenho garantido em mensagens reais.

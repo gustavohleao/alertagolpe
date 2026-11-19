@@ -30,6 +30,24 @@ BAND_ALUGUEL = "https://www.band.com.br/bandnews-fm/noticias/golpe-do-aluguel-fa
 GOV_DOACAO = "https://agenciagov.ebc.com.br/noticias/202405/campanha-alerta-sobre-golpes-em-que-os-criminosos-solicitam-doacoes-as-vitimas-das-enchentes-nos-estados-do-rs-e-de-sc-com-chave-pix-falsa"
 SANTANDER_DOACAO = "https://www.santander.com.br/blog/golpe-pix-rio-grande-do-sul"
 CNH_SUSPENSA = "https://canaltech.com.br/seguranca/golpe-da-cnh-suspensa-usa-sms-falso-alerta-detran-saiba-como-se-proteger/"
+MEDICO_CANALTECH = "https://canaltech.com.br/seguranca/falsos-medicos-aplicam-golpes-na-familia-de-pacientes-internados-259922/"
+MEDICO_BAND = "https://www.band.com.br/bandnews-fm/noticias/alerta-de-golpe-criminosos-pedem-pix-a-familiares-de-pacientes-internados-202508191105"
+SEXTORSAO_ESET = "https://www.welivesecurity.com/br/2019/02/27/campanhas-de-sextorsao-continuam-circulando-por-email/"
+SEXTORSAO_TECNOBLOG = "https://tecnoblog.net/466795/golpe-de-falsa-extorsao-no-brasil-ja-roubou-r-15-mil-em-bitcoin/"
+INTERMEDIARIO_SERASA = "https://www.serasa.com.br/premium/blog/golpe-na-olx-como-identificar-o-falso-anuncio-de-venda-de-carros/"
+INTERMEDIARIO_MEUTUDO = "https://meutudo.com.br/blog/golpe-do-intermediario/"
+INSS_GOV = "https://agenciagov.ebc.com.br/noticias/202504/links-falsos-estao-circulando-nas-redes-sociais-para-consulta-a-suposto-direito-de-segurados-do-inss-a-indenizacao"
+INSS_CANALTECH = "https://canaltech.com.br/seguranca/inss-alerta-para-golpe-com-link-falso-para-consultar-direito-a-indenizacao/"
+INGRESSO_SERASA = "https://www.serasa.com.br/premium/blog/golpe-do-ingresso-falso-o-que-fazer-para-nao-cair-nele/"
+INGRESSO_CNN = "https://www.cnnbrasil.com.br/nacional/sudeste/sp/golpe-do-ingresso-falso-veja-dicas-de-como-se-previnir/"
+DIVIDA_SERASA = "https://www.serasa.com.br/limpa-nome-online/blog/golpe-do-desenrola-brasil/"
+DIVIDA_OLHAR = "https://olhardigital.com.br/2023/07/19/seguranca/desenrola-brasil-golpes-circulam-no-whatsapp-e-facebook-veja-como-se-proteger/"
+QRCODE_JC = "https://www.jornaldocomercio.com/economia/2026/10/1267712-golpe-do-qr-code-pode-desviar-pagamentos-por-boleto-e-pix.html"
+QRCODE_CANALTECH = "https://canaltech.com.br/seguranca/pix-e-qr-code-os-golpes-invisiveis-que-ainda-fazem-vitimas-no-brasil/"
+CONSORCIO_SERASA = "https://www.serasa.com.br/premium/blog/como-identificar-golpe-do-consorcio-contemplado/"
+CONSORCIO_OLHAR = "https://olhardigital.com.br/2022/12/01/dicas-e-tutoriais/o-que-e-e-como-funciona-um-golpe-de-consorcio/"
+RESERVA_CANALTECH = "https://canaltech.com.br/seguranca/novo-golpe-faz-voce-pagar-em-dobro-pela-sua-reserva-no-booking-e-airbnb/"
+RESERVA_TECNOBLOG = "https://tecnoblog.net/noticias/golpe-do-sequestro-de-reserva-usa-dados-reais-de-hoteis-para-enganar-brasileiros/"
 GOV_DASN = "https://www.gov.br/pt-br/servicos/declarar-receita-bruta-anual-para-o-mei"
 PIX_ERRADO = "https://www.opovo.com.br/noticias/economia/2024/07/11/amp/entenda-o-golpe-do-pix-errado-e-saiba-como-nao-ser-enganado.html"
 
@@ -199,6 +217,60 @@ CATALOG: tuple[Scam, ...] = (
          "Ajude a pequena Laura a fazer a cirurgia! Faltam só R$ 8 mil. Qualquer valor salva uma vida. Pix: ajudalaura2025@gmail.com",
          ("Doe só pelos canais divulgados pelo governo ou pela instituição.", "Antes de confirmar o Pix, confira se o nome do recebedor é o da instituição.", "Desconfie de chaves Pix de e-mail pessoal ou celular."),
          (GOV_DOACAO, SANTANDER_DOACAO)),
+    Scam("G22", "Falso médico ou hospital",
+         "Com dados reais de um paciente internado, o golpista liga ou manda mensagem se passando por médico ou pelo hospital e diz que é preciso pagar por Pix um exame, remédio ou procedimento urgente que o hospital 'não cobre'.",
+         ("Diz ser médico ou do hospital", "Parente internado ou em cirurgia", "Exame, remédio ou procedimento urgente", "Pagamento por Pix para pessoa física", "Pede segredo ou pressa"),
+         "Boa tarde, sou o Dr. Paulo, plantonista da UTI. Seu pai precisa de um exame de urgência que o hospital não cobre. Para não atrasar, faça o Pix de R$ 2.300 para o laboratório agora.",
+         ("Hospitais não cobram exames por Pix por mensagem.", "Ligue para o hospital pelo número oficial e confirme com a equipe.", "Não pague antes de falar pessoalmente com o hospital."),
+         (MEDICO_CANALTECH, MEDICO_BAND)),
+    Scam("G23", "Extorsão por e-mail (falso vídeo íntimo)",
+         "E-mail ou mensagem diz que o seu computador ou celular foi invadido e que você foi gravado pela câmera em momento íntimo, às vezes citando uma senha antiga vazada, e exige pagamento em bitcoin ou Pix para não divulgar o vídeo.",
+         ("Diz ter invadido o computador ou a câmera", "Ameaça divulgar vídeo íntimo", "Cita uma senha antiga sua", "Pagamento em bitcoin ou Pix com prazo"),
+         "Eu hackeei seu dispositivo e gravei você pela câmera enquanto assistia a sites adultos. Pague R$ 2.500 em bitcoin em 48 horas ou envio o vídeo para todos os seus contatos.",
+         ("É quase sempre um blefe: não responda nem pague.", "Troque a senha citada em todas as contas em que ela foi usada.", "Se houver ameaça real, registre boletim de ocorrência."),
+         (SEXTORSAO_ESET, SEXTORSAO_TECNOBLOG)),
+    Scam("G24", "Falso intermediário em venda de carro ou objeto",
+         "O golpista copia o anúncio verdadeiro de um carro ou objeto, negocia com o comprador e com o dono ao mesmo tempo e faz o comprador depositar o dinheiro na conta dele, pedindo que ninguém fale de valores na hora da visita.",
+         ("Preço abaixo do mercado", "Diz ser parente ou sócio do dono", "Pede depósito em conta de terceiro", "Pede para não falar de valores na visita", "Negocia fora do chat da plataforma"),
+         "O carro é do meu primo, eu que estou vendendo. Na visita não comenta valor com ele, pois é uma dívida de família. Faz o depósito na minha conta que já libero o documento.",
+         ("Pague só ao dono do bem, em conta no nome dele.", "Converse sobre valores com o vendedor na frente de todos.", "Mantenha a conversa no chat da plataforma."),
+         (INTERMEDIARIO_SERASA, INTERMEDIARIO_MEUTUDO)),
+    Scam("G25", "Falso ressarcimento do INSS ou de benefício",
+         "Mensagem promete devolver descontos indevidos de aposentadorias ou pagar uma indenização do INSS e manda consultar por um link ou pagar uma taxa para liberar o dinheiro.",
+         ("Promete devolução ou indenização do INSS", "Descontos indevidos na aposentadoria", "Link para consultar o direito", "Taxa para liberar o valor", "Pede CPF e dados bancários"),
+         "INSS: você tem direito ao ressarcimento de R$ 1.380 de descontos indevidos no seu benefício. Consulte e solicite até sexta: inss-ressarcimento.com",
+         ("A consulta é só pelo app ou site Meu INSS ou pela Central 135.", "Sites do governo terminam em .gov.br.", "O INSS não cobra taxa para devolver valores."),
+         (INSS_GOV, INSS_CANALTECH)),
+    Scam("G26", "Ingresso falso",
+         "Perfis em redes sociais ou sites falsos vendem ingressos para shows, jogos e festas, geralmente esgotados, recebem por Pix e não entregam, ou entregam ingressos falsos ou já usados.",
+         ("Ingresso de evento esgotado", "Venda por rede social ou WhatsApp", "Pagamento só por Pix", "Preço fora do normal", "Não transfere o ingresso para o seu nome"),
+         "Tenho 2 ingressos para o show de sábado, pista premium, faço os dois por R$ 500 porque não vou poder ir. Só Pix, te mando o QR code do ingresso por aqui.",
+         ("Compre só no site oficial ou na bilheteria.", "Na revenda, use plataformas que transferem o ingresso para o seu CPF.", "Desconfie de quem só aceita Pix."),
+         (INGRESSO_SERASA, INGRESSO_CNN)),
+    Scam("G27", "Falsa renegociação de dívida",
+         "Usando o nome do Desenrola, da Serasa ou de bancos, golpistas oferecem quitar dívidas com descontos enormes por um link ou boleto, ou cobram uma taxa para entrar no programa.",
+         ("Desconto enorme para quitar dívida", "Nome do Desenrola, Serasa ou banco", "Link ou boleto enviado por mensagem", "Taxa para participar do programa"),
+         "Desenrola Brasil: sua dívida de R$ 4.300 pode ser quitada por R$ 129,90. Oferta válida só hoje. Gere o boleto em desenrola-quitacao.com",
+         ("Não há taxa para participar do Desenrola.", "Negocie só pelo app ou site do credor ou da Serasa, digitando o endereço.", "Confira o beneficiário antes de pagar qualquer boleto."),
+         (DIVIDA_SERASA, DIVIDA_OLHAR)),
+    Scam("G28", "QR code de pagamento adulterado",
+         "O golpista troca o QR code de pagamento por um dele: adesivo por cima do código em bares, feiras e estacionamentos, boleto alterado ou QR code enviado por mensagem. O dinheiro vai para outra pessoa.",
+         ("QR code colado por cima ou enviado por mensagem", "Nome do recebedor diferente da empresa", "Boleto com QR code diferente", "Pede para pagar rápido sem conferir"),
+         "Para pagar a conta da mesa, use o novo QR code que mandamos aqui, o da maquininha está com problema. Pode pagar direto pelo Pix.",
+         ("Antes de confirmar, confira no app o nome do recebedor e o valor.", "Desconfie de adesivos colados sobre o QR code.", "Prefira o QR code gerado na maquininha ou no app da empresa."),
+         (QRCODE_JC, QRCODE_CANALTECH)),
+    Scam("G29", "Consórcio contemplado falso",
+         "Anúncios oferecem cartas de consórcio 'já contempladas' para comprar carro ou casa na hora, por preço muito baixo, e pedem uma entrada ou taxa por Pix; a carta não existe.",
+         ("Carta de consórcio já contemplada", "Crédito liberado na hora", "Entrada ou taxa por Pix", "Empresa não autorizada pelo Banco Central"),
+         "Carta de consórcio CONTEMPLADA de R$ 80 mil para carro, liberação imediata! Basta pagar a entrada de R$ 3.500 hoje e transferimos a cota para o seu nome.",
+         ("Confira se a administradora é autorizada pelo Banco Central.", "Confirme a cota direto com a administradora.", "Não pague entrada para pessoas ou contas de terceiros."),
+         (CONSORCIO_SERASA, CONSORCIO_OLHAR)),
+    Scam("G30", "Falsa cobrança de reserva de hotel",
+         "Depois de uma reserva real, a vítima recebe mensagem pelo WhatsApp, e-mail ou até pelo chat da plataforma, com os dados corretos da hospedagem, dizendo que houve problema no pagamento e pedindo para pagar de novo ou 'confirmar o cartão' por um link.",
+         ("Cita a reserva, as datas e o hotel corretos", "Problema no pagamento", "Link para confirmar cartão ou pagar de novo", "Ameaça de cancelar a reserva"),
+         "Olá, aqui é do Hotel Praia Azul. Sua reserva de 20/12 será cancelada porque o pagamento não foi aprovado. Confirme o cartão em até 12h neste link: reserva-confirmacao.com",
+         ("Confira a reserva só pelo app ou site da plataforma.", "Ligue para o hotel pelo telefone do site oficial.", "Não informe dados do cartão por links recebidos."),
+         (RESERVA_CANALTECH, RESERVA_TECNOBLOG)),
 )
 
 BY_ID = {scam.id: scam for scam in CATALOG}

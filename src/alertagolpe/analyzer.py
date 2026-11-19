@@ -12,7 +12,7 @@ from .providers import ProviderConfig, ProviderError, generate
 from .retrieval import DocumentIndex, SearchHit
 from .signals import Signal, detect, local_level, local_score
 
-PROMPT_VERSION = "alertagolpe-v4"
+PROMPT_VERSION = "alertagolpe-v5"
 # E-mails de golpe (falso boleto, falsa vaga) podem ser longos.
 MAX_MESSAGE_CHARS = 10000
 RISKS = ("alto", "medio", "baixo")
@@ -38,6 +38,14 @@ Também é golpe ("alto"): mensagem com aparência de aviso oficial (declaraçã
 imposto) que fala em "pendência" e manda "regularizar" por link, mesmo que um rodapé diga que a
 empresa é privada e "sem vínculo" com o governo: serviços como a declaração do MEI são gratuitos
 no gov.br, e cobrar por eles imitando o aviso oficial é fraude.
+Calibragem: use "medio" só quando faltam elementos para decidir (por exemplo, um trecho sem
+nenhum pedido, oferta ou link). Use "alto" quando a mensagem segue o mecanismo de um golpe
+candidato, mesmo sem link: pede dinheiro, dados, código ou pagamento que a pessoa não esperava;
+pede para devolver um Pix "recebido por engano" para outra conta; ou oferece dinheiro (benefício,
+saque, restituição, reajuste, prêmio) e manda consultar ou resgatar por link, contato ou pagamento
+fora do aplicativo oficial. Já um aviso que só informa (prazo, benefício liberado, serviço
+gratuito, compra feita) e orienta usar por conta própria o portal ou aplicativo oficial, sem link
+estranho, sem cobrança e sem pedir dados, continua "baixo", mesmo citando órgão público ou prazo.
 Se a mensagem só tem urgência e o nome da empresa, oferece o aplicativo oficial como caminho
 e não tem nenhum sinal de golpe, classifique como "baixo" e oriente a conferir pelo aplicativo.
 Um SMS que apenas ENTREGA um código de verificação e avisa para não compartilhá-lo é o próprio

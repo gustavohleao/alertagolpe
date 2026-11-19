@@ -94,7 +94,7 @@
     {
       "id": "S16",
       "rotulo": "golpe",
-      "golpe": "G13",
+      "golpe": "G25",
       "texto": "INSS: identificamos valores retroativos do seu benefício disponíveis para saque. Para liberar o pagamento, regularize seus dados pelo link inss-beneficio-digital.online em até 48 horas."
     },
     {
@@ -237,6 +237,60 @@
       "texto": "URGENTE: ajude as famílias atingidas pelas enchentes no Rio Grande do Sul. Qualquer valor ajuda! Pix: doacoes.enchentes.rs@gmail.com"
     },
     {
+      "id": "S28",
+      "rotulo": "golpe",
+      "golpe": "G22",
+      "texto": "Aqui é a médica responsável pela sua mãe no Hospital São Lucas. Ela precisa de uma tomografia agora e o convênio não cobre. Para não perder a vaga, faça o Pix de R$ 1.850 para a clínica parceira, depois a gente ajusta."
+    },
+    {
+      "id": "S29",
+      "rotulo": "golpe",
+      "golpe": "G23",
+      "texto": "Sua senha é Flamengo2019. Tenho acesso ao seu computador há meses e gravei você pela webcam. Se não quiser que seus amigos e família recebam o vídeo, envie R$ 3.000 em bitcoin em até 2 dias. Não adianta ir à polícia."
+    },
+    {
+      "id": "S30",
+      "rotulo": "golpe",
+      "golpe": "G24",
+      "texto": "Oi, vi que você quer o Onix. O carro é do meu cunhado, estou ajudando ele a vender. Quando for ver o carro, não fala de preço com ele porque ele tem uma dívida comigo. Depois faz a transferência pra minha conta que ele libera o documento."
+    },
+    {
+      "id": "S31",
+      "rotulo": "golpe",
+      "golpe": "G25",
+      "texto": "ATENÇÃO APOSENTADO: o governo vai devolver os descontos indevidos do seu benefício. Para receber os R$ 2.140, pague a taxa de liberação de R$ 59,90 e informe seu CPF e conta bancária."
+    },
+    {
+      "id": "S32",
+      "rotulo": "golpe",
+      "golpe": "G26",
+      "texto": "Vendo 1 ingresso pro show do Coldplay, pista, R$ 350 porque não vou mais. Só aceito Pix, assim que cair te mando o print do ingresso."
+    },
+    {
+      "id": "S33",
+      "rotulo": "golpe",
+      "golpe": "G27",
+      "texto": "SERASA LIMPA NOME: sua dívida de R$ 6.780 com o banco tem 97% de desconto. Pague apenas R$ 203,40 hoje pelo boleto no link e tire seu nome do vermelho: limpanome-acordo.net"
+    },
+    {
+      "id": "S34",
+      "rotulo": "golpe",
+      "golpe": "G28",
+      "texto": "Oi! A maquininha do restaurante caiu. Pode pagar a conta por este QR code que estou te mandando aqui no WhatsApp, é a conta do gerente."
+    },
+    {
+      "id": "S35",
+      "rotulo": "golpe",
+      "golpe": "G29",
+      "texto": "Vendo carta de consórcio contemplada de R$ 120 mil para imóvel, liberação na hora. Só preciso de R$ 6 mil de entrada no Pix para transferir a cota para você."
+    },
+    {
+      "id": "S36",
+      "rotulo": "golpe",
+      "golpe": "G30",
+      "texto": "Booking: Olá, sua reserva no Pousada Mar Verde (18 a 22/12) está com o pagamento pendente. Para não ser cancelada, confirme os dados do seu cartão em até 24h: booking-pagamento-seguro.com"
+    },
+    {
       "id": "L13",
       "rotulo": "legitima",
       "golpe": null,
@@ -272,6 +326,18 @@
       "rotulo": "legitima",
       "golpe": null,
       "texto": "Oi! Aqui é a Juliana da imobiliária Nova Casa. A visita ao apartamento da Rua das Flores ficou para sábado às 10h. Leve um documento com foto. Qualquer coisa me chama."
+    },
+    {
+      "id": "L19",
+      "rotulo": "legitima",
+      "golpe": null,
+      "texto": "Olá, aqui é da recepção do Hotel Mar Azul. Confirmamos sua reserva de 20 a 23/12. O check-in é a partir das 14h. Qualquer dúvida, é só chamar. Até breve!"
+    },
+    {
+      "id": "L20",
+      "rotulo": "legitima",
+      "golpe": null,
+      "texto": "Santa Casa informa: o horário de visita na UTI é das 15h às 16h, com no máximo 2 visitantes por paciente. Informações sobre o paciente só pessoalmente, na recepção."
     }
   ]
 }

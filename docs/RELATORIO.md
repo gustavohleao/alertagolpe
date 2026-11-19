@@ -11,17 +11,17 @@
 > recebe o nível de risco, os sinais de alerta — sempre com o trecho exato da
 > mensagem —, o golpe conhecido com que ela mais se parece e o que fazer em
 > seguida. A análise combina três camadas: regras locais explicáveis, busca por
-> similaridade (TF-IDF e cosseno) em um catálogo de 21 golpes documentados por
+> similaridade (TF-IDF e cosseno) em um catálogo de 30 golpes documentados por
 > fontes públicas e um modelo generativo (API Gemini) que interpreta o conjunto
-> e explica o resultado em linguagem simples. Em um conjunto de avaliação com 27
-> golpes e 18 mensagens legítimas, as regras sozinhas detectaram 14 golpes; com
-> a IA e o catálogo, os 27 foram detectados como risco alto, sem alarmes falsos —
+> e explica o resultado em linguagem simples. Em um conjunto de avaliação com 36
+> golpes e 20 mensagens legítimas, as regras sozinhas detectaram 18 golpes; com
+> a IA e o catálogo, os 36 foram detectados como risco alto, sem alarmes falsos —
 > depois de corrigir dois erros revelados por mensagens reais: um alarme falso em
 > que o modelo inventou fatos e um golpe que recebeu só risco médio. Em um teste
 > de reserva com 20 mensagens inéditas, não usadas em nenhum ajuste, o app
 > também acertou todas. Por fim, o catálogo foi alimentado com 18 mensagens
-> de golpe reais, copiadas de reportagens e alertas públicos, e o app acertou
-> as 16 mensagens reais separadas para teste.
+> de golpe reais, copiadas de reportagens e alertas públicos; nas 16 mensagens
+> reais separadas para teste, o app acertou 15.
 
 ---
 
@@ -88,7 +88,7 @@ em poucos segundos, obtém:
 | **Parece com** | O golpe do catálogo mais parecido, como ele funciona e as fontes |
 | **Sinais automáticos** | Uma segunda opinião por regras fixas, com pontuação de 0 a 100 |
 
-A aplicação também oferece um **catálogo navegável** dos 21 golpes, com sinais
+A aplicação também oferece um **catálogo navegável** dos 30 golpes, com sinais
 típicos, exemplo e orientações, e uma página que explica como a análise funciona.
 
 ### 1.3 Público e escopo
@@ -99,7 +99,7 @@ delimitado para manter a solução verificável:
 
 - Texto em português, colado pelo usuário (até 10.000 caracteres, o suficiente para e-mails longos). Capturas de
   tela, áudios e ligações não são analisados.
-- O catálogo cobre 21 golpes frequentes; golpes novos podem não estar nele.
+- O catálogo cobre 30 golpes frequentes; golpes novos podem não estar nele.
 - Nada é gravado em disco; o histórico existe apenas na sessão do navegador.
 - A análise é um apoio, não uma garantia. A orientação final é sempre
   confirmar pelo canal oficial.
@@ -159,7 +159,8 @@ serviço, e pelo teste com mensagens reais, que revelou um alarme falso (seção
 segundo teste real, com um e-mail de falsa regularização do MEI que recebeu só
 risco médio, levou a um novo golpe no catálogo e a 38 mensagens. Por fim,
 testes com 76 mensagens inéditas levaram a mais quatro golpes no catálogo e
-ao conjunto final de 45 mensagens. O
+a 45 mensagens; em 19/11, mais nove golpes levaram o catálogo a 30 e o
+conjunto final a 56 mensagens. O
 cliente da API Gemini, o motor de busca TF-IDF e a leitura de configuração
 partiram de módulos gerados anteriormente com assistência do Codex.
 
@@ -200,7 +201,7 @@ flowchart LR
     UI --> AN[Análise<br/>analyzer.py]
     AN --> SG[Regras locais<br/>signals.py]
     AN --> IDX[Busca TF-IDF<br/>retrieval.py]
-    CAT[Catálogo de 21 golpes<br/>catalog.py] --> IDX
+    CAT[Catálogo de 30 golpes<br/>catalog.py] --> IDX
     AN --> GEM[Cliente Gemini<br/>providers.py]
     GEM -->|HTTPS| API[(API Gemini)]
     CFG[.env no servidor<br/>chave e modelo] --> GEM
@@ -238,8 +239,8 @@ A validação trata a resposta do modelo como entrada não confiável:
 
 ### 3.5 Catálogo de golpes
 
-Os 21 golpes foram selecionados a partir dos mais relatados pela Febraban e de
-alertas do Banco Central, do Sebrae, da OAB, das polícias e da imprensa. Cada entrada traz nome, mecanismo,
+Os 30 golpes foram selecionados a partir dos mais relatados pela Febraban e de
+alertas do Banco Central, do INSS, do Sebrae, da OAB, das polícias e da imprensa. Cada entrada traz nome, mecanismo,
 sinais típicos, uma mensagem de exemplo fictícia, o que fazer e as fontes.
 Nove golpes também têm **mensagens reais** (18 no total, em
 `src/alertagolpe/exemplos_reais.json`), copiadas de reportagens e alertas
@@ -247,7 +248,7 @@ públicos, com a fonte de cada uma. O texto de cada entrada (nome + mecanismo +
 sinais + exemplo + mensagens reais) forma o documento indexado pela busca, e
 até duas mensagens reais de cada golpe candidato são enviadas ao modelo como
 referência. A interface mostra uma delas, com link para a reportagem. Como verificação de consistência, a mensagem de exemplo de
-cada golpe recupera o próprio golpe em primeiro lugar nos 21 casos.
+cada golpe recupera o próprio golpe em primeiro lugar nos 30 casos.
 
 ### 3.6 Prompts
 
@@ -298,8 +299,8 @@ testes são simuladas; o desempenho real é medido na seção 4.
 
 ### 4.1 Avaliação
 
-**Método.** O conjunto `avaliacao/mensagens.json` tem **27 golpes**, cobrindo
-os 21 tipos do catálogo, e **18 mensagens legítimas** — incluindo casos
+**Método.** O conjunto `avaliacao/mensagens.json` tem **36 golpes**, cobrindo
+os 30 tipos do catálogo, e **20 mensagens legítimas** — incluindo casos
 difíceis que citam banco, Pix, código de verificação, entrega e bloqueio de
 cartão. As mensagens são fictícias, escritas a partir dos padrões descritos em
 alertas públicos e diferentes dos exemplos do catálogo, exceto duas **reais**,
@@ -308,22 +309,25 @@ um golpe (S23), descritas abaixo. O script `avaliar.py` executa o conjunto
 em dois modos e salva o resultado de cada mensagem em
 `output/avaliacao-resultados.json`. "Detectado" significa risco alto ou médio.
 
-**Resultados finais (18/11/2026, `gemini-3.5-flash-lite` com modelos reserva):**
+**Resultados finais (19/11/2026, `gemini-3.5-flash-lite` com modelos reserva, prompt `alertagolpe-v5`):**
 
 | Métrica | Só regras locais | Regras + catálogo + IA |
 | --- | --- | --- |
-| Golpes detectados | 14/27 | **27/27** |
-| Golpes classificados como risco alto | 1/27 | **27/27** |
-| Tipo de golpe correto (entre os detectados) | 13/14 | **27/27** |
-| Alarmes falsos em mensagens legítimas | 3/18 | **0/18** |
-| Acurácia total | 29/45 | **45/45** |
-| Tempo médio por mensagem | < 0,1 s | 6,6 s (máx. 31,8 s, com troca para o modelo reserva) |
+| Golpes detectados | 18/36 | **36/36** |
+| Golpes classificados como risco alto | 1/36 | **36/36** |
+| Tipo de golpe correto (entre os detectados) | 16/18 | **36/36** |
+| Alarmes falsos em mensagens legítimas | 3/20 | **0/19** |
+| Acurácia total | 35/56 | **55/55** (+1 falha do serviço) |
+| Tempo médio por mensagem | < 0,1 s | 9,9 s (máx. 102,3 s, com troca para o modelo reserva) |
 
 Na primeira avaliação (17/11, 32 mensagens), o resultado foi 21/32 com regras e
-32/32 com IA; com 36 mensagens, 24/36 e 36/36; com 38, 26/38 e 38/38. O
-conjunto foi ampliado a cada teste descrito abaixo. O tempo médio variou
-entre 5,4 s e 14,8 s nas rodadas, conforme o número de trocas para o modelo
-reserva (limite de chamadas por minuto do serviço); na rodada final, 6,6 s.
+32/32 com IA; com 36 mensagens, 24/36 e 36/36; com 38, 26/38 e 38/38; com 45,
+29/45 e 45/45. O conjunto foi ampliado a cada teste descrito abaixo. Na rodada
+final, uma das 56 respostas do serviço veio com estrutura inválida mesmo após as
+novas tentativas; o app mostra "tente novamente" e não classifica a mensagem, e
+ela foi contada à parte. O tempo médio variou entre 5,4 s e 14,8 s nas rodadas,
+conforme o número de trocas para o modelo reserva (limite de chamadas por minuto
+do serviço).
 
 **Análise.**
 
@@ -435,11 +439,11 @@ Antes da divisão, dois rótulos de tipo foram corrigidos (o e-mail falso de
 "reajuste" de um ministério é G13, falso órgão público; contas de luz falsas
 com link são G03).
 
-| Teste com 16 mensagens reais | Antes do treino | Depois do treino |
-| --- | --- | --- |
-| Detectadas corretamente | 16/16 | **16/16** |
-| Golpes como risco alto | 13/14 | **13/14** |
-| Tipo de golpe correto | 10/14 | **11/14** |
+| Teste com 16 mensagens reais | Antes do treino (18/11) | Depois do treino (18/11) | Final: 30 golpes e prompt v5 (19/11) |
+| --- | --- | --- | --- |
+| Detectadas corretamente | 16/16 | **16/16** | 15/16 |
+| Golpes como risco alto | 13/14 | **13/14** | 12/14 |
+| Tipo de golpe correto | 10/14 | **11/14** | 11/13 |
 
 O "treino" aqui não altera o modelo Gemini, cujos pesos não são acessíveis:
 ele amplia a base de conhecimento consultada antes de cada análise (o padrão
@@ -448,6 +452,26 @@ de golpe e no painel "Parece com", que agora mostra uma mensagem real
 parecida. A falsa doação (um trecho sem Pix nem link) continuou como
 "médio". Depois do treino, o conjunto principal e o teste de reserva foram
 executados de novo, sem nenhuma piora (45/45 e 20/20).
+
+**O modelo mudou de comportamento sem aviso (19/11).** Depois de acrescentar
+nove golpes ao catálogo (G22 a G30: falso médico, extorsão por e-mail, falso
+intermediário, falso ressarcimento do INSS, ingresso falso, falsa renegociação
+de dívida, QR code adulterado, consórcio contemplado falso e falsa cobrança de
+reserva, com fontes), três golpes reais de teste que no dia anterior saíam como
+"alto" passaram a sair como "médio", de forma repetida. Rodar os mesmos casos
+com o catálogo antigo, de 21 golpes, deu o mesmo resultado: a causa não era o
+catálogo, e sim uma mudança no próprio modelo, que o provedor atualiza sem
+aviso. A correção foi uma regra geral de **calibragem** no prompt (versão
+`alertagolpe-v5`): "médio" só quando faltam elementos para decidir; "alto"
+quando a mensagem segue o mecanismo de um golpe candidato. A primeira versão
+dessa regra transformou em "alto" um lembrete legítimo do Sebrae (L15); foi
+acrescentada a exceção de avisos que só informam e mandam usar o canal oficial,
+e a rodada final não teve alarmes falsos no conjunto principal nem no teste de
+reserva. Nas mensagens reais de teste, o e-mail falso de "reajuste salarial" de
+um ministério (R30) passou a sair como "baixo": a transcrição não tem o link nem
+um pedido, e só pelo texto é igual a um aviso verdadeiro do governo. Ele não foi
+forçado, para não criar alarmes falsos. No teste de ajuste, a rodada final teve
+um "médio" para uma legítima ("olha esse vídeo… youtube.com/…", 54/55).
 
 **Testes preliminares** com mensagens avulsas confirmaram o comportamento: o
 falso filho pedindo Pix foi classificado como alto (golpe G01, 5,7 s); uma
@@ -511,11 +535,13 @@ reconhecer o próximo golpe sozinha.
 - **Falso negativo é o erro mais grave:** um "risco baixo" errado pode dar falsa
   segurança. Por isso o resultado baixo também orienta a confirmar pelo canal
   oficial.
-- **Cobertura:** 21 golpes; variações novas dependem só do modelo.
+- **Cobertura:** 30 golpes; variações novas dependem só do modelo.
 - **Formato:** analisa apenas texto; golpes chegam também como imagem, áudio e
   ligação.
 - **Dependência do provedor:** sem a API, restam as regras, que detectaram
-  metade dos golpes na avaliação.
+  metade dos golpes na avaliação. O modelo também muda com atualizações do
+  provedor (19/11): os testes precisam ser repetidos antes de cada uso
+  importante, como a apresentação.
 - **Avaliação:** conjuntos pequenos; as mensagens reais (34) vêm de reportagens, que tendem a mostrar os golpes mais típicos; não houve teste com usuários.
 - **Pontuação local:** os pesos foram definidos manualmente; não são uma
   probabilidade calibrada.
@@ -524,7 +550,7 @@ reconhecer o próximo golpe sozinha.
 
 1. **Combinar técnicas é melhor do que escolher uma.** Regras são rápidas e
    explicáveis, mas rígidas; o modelo é flexível, mas precisa ser verificado. A
-   avaliação mostrou o ganho da combinação (29/45 para 45/45).
+   avaliação mostrou o ganho da combinação (35/56 para 55/55).
 2. **A saída do modelo é entrada não confiável.** Exigir trechos exatos e
    validar cada campo impediu que erros do modelo chegassem ao usuário.
 3. **Falhas transitórias são a regra em serviços de IA.** Erros 503 e JSON
@@ -537,6 +563,9 @@ reconhecer o próximo golpe sozinha.
    grupo deu 32/32, mas a primeira mensagem real testada revelou um alarme falso
    com fatos inventados pelo modelo. E toda correção precisa de nova avaliação:
    a primeira tentativa resolveu o caso e criou dois erros novos.
+7. **O mesmo modelo não dá o mesmo resultado para sempre.** Um serviço de IA em
+   nuvem é atualizado sem aviso; ter os conjuntos de teste prontos permitiu
+   perceber a mudança, achar a causa e corrigir no mesmo dia.
 
 ---
 
@@ -645,6 +674,39 @@ foi tão importante quanto o próprio modelo para tornar o resultado confiável.
 - Golpe do Pix nas doações ao Rio Grande do Sul (Santander): https://www.santander.com.br/blog/golpe-pix-rio-grande-do-sul
 - Golpe da CNH suspensa usa SMS falso (Canaltech):
   https://canaltech.com.br/seguranca/golpe-da-cnh-suspensa-usa-sms-falso-alerta-detran-saiba-como-se-proteger/
+- Falsos médicos aplicam golpes na família de pacientes internados (Canaltech):
+  https://canaltech.com.br/seguranca/falsos-medicos-aplicam-golpes-na-familia-de-pacientes-internados-259922/
+- Criminosos pedem Pix a familiares de pacientes internados (BandNews FM, 2025):
+  https://www.band.com.br/bandnews-fm/noticias/alerta-de-golpe-criminosos-pedem-pix-a-familiares-de-pacientes-internados-202508191105
+- Campanhas de sextorsão continuam circulando por e-mail (ESET WeLiveSecurity, 2019):
+  https://www.welivesecurity.com/br/2019/02/27/campanhas-de-sextorsao-continuam-circulando-por-email/
+- Golpe de falsa extorsão no Brasil já roubou R$ 15 mil em bitcoin (Tecnoblog):
+  https://tecnoblog.net/466795/golpe-de-falsa-extorsao-no-brasil-ja-roubou-r-15-mil-em-bitcoin/
+- Golpe na OLX: como identificar o falso anúncio de venda de carros (Serasa):
+  https://www.serasa.com.br/premium/blog/golpe-na-olx-como-identificar-o-falso-anuncio-de-venda-de-carros/
+- Golpe do intermediário (meutudo): https://meutudo.com.br/blog/golpe-do-intermediario/
+- Links falsos para consulta a suposto direito de segurados do INSS a indenização (Agência Gov, 2025):
+  https://agenciagov.ebc.com.br/noticias/202504/links-falsos-estao-circulando-nas-redes-sociais-para-consulta-a-suposto-direito-de-segurados-do-inss-a-indenizacao
+- INSS alerta para golpe com link falso para consultar direito a indenização (Canaltech):
+  https://canaltech.com.br/seguranca/inss-alerta-para-golpe-com-link-falso-para-consultar-direito-a-indenizacao/
+- Golpe do ingresso falso (Serasa): https://www.serasa.com.br/premium/blog/golpe-do-ingresso-falso-o-que-fazer-para-nao-cair-nele/
+- Golpe do ingresso falso: veja dicas de como se prevenir (CNN Brasil):
+  https://www.cnnbrasil.com.br/nacional/sudeste/sp/golpe-do-ingresso-falso-veja-dicas-de-como-se-previnir/
+- Golpe do Desenrola Brasil (Serasa): https://www.serasa.com.br/limpa-nome-online/blog/golpe-do-desenrola-brasil/
+- Desenrola Brasil: golpes circulam no WhatsApp e Facebook (Olhar Digital, 2023):
+  https://olhardigital.com.br/2023/07/19/seguranca/desenrola-brasil-golpes-circulam-no-whatsapp-e-facebook-veja-como-se-proteger/
+- Golpe do QR code pode desviar pagamentos por boleto e Pix (Jornal do Comércio, 2026):
+  https://www.jornaldocomercio.com/economia/2026/10/1267712-golpe-do-qr-code-pode-desviar-pagamentos-por-boleto-e-pix.html
+- Pix e QR code: os golpes invisíveis (Canaltech):
+  https://canaltech.com.br/seguranca/pix-e-qr-code-os-golpes-invisiveis-que-ainda-fazem-vitimas-no-brasil/
+- Como identificar golpe do consórcio contemplado (Serasa):
+  https://www.serasa.com.br/premium/blog/como-identificar-golpe-do-consorcio-contemplado/
+- O que é e como funciona um golpe de consórcio (Olhar Digital, 2022):
+  https://olhardigital.com.br/2022/12/01/dicas-e-tutoriais/o-que-e-e-como-funciona-um-golpe-de-consorcio/
+- Novo golpe faz você pagar em dobro pela sua reserva no Booking e Airbnb (Canaltech):
+  https://canaltech.com.br/seguranca/novo-golpe-faz-voce-pagar-em-dobro-pela-sua-reserva-no-booking-e-airbnb/
+- Golpe do sequestro de reserva usa dados reais de hotéis (Tecnoblog):
+  https://tecnoblog.net/noticias/golpe-do-sequestro-de-reserva-usa-dados-reais-de-hoteis-para-enganar-brasileiros/
 - scikit-learn — TF-IDF:
   https://scikit-learn.org/stable/modules/feature_extraction.html#text-feature-extraction
 - scikit-learn — similaridade do cosseno:
@@ -659,7 +721,7 @@ As demais fontes de cada golpe estão em `src/alertagolpe/catalog.py`.
 
 ## Apêndice A — Prompt
 
-### A.1 Instrução de sistema (`analyzer.py`, versão `alertagolpe-v4`)
+### A.1 Instrução de sistema (`analyzer.py`, versão `alertagolpe-v5`)
 
 ```text
 Você é o AlertaGolpe, um analista de segurança que ajuda pessoas comuns
@@ -683,6 +745,14 @@ Também é golpe ("alto"): mensagem com aparência de aviso oficial (declaraçã
 imposto) que fala em "pendência" e manda "regularizar" por link, mesmo que um rodapé diga que a
 empresa é privada e "sem vínculo" com o governo: serviços como a declaração do MEI são gratuitos
 no gov.br, e cobrar por eles imitando o aviso oficial é fraude.
+Calibragem: use "medio" só quando faltam elementos para decidir (por exemplo, um trecho sem
+nenhum pedido, oferta ou link). Use "alto" quando a mensagem segue o mecanismo de um golpe
+candidato, mesmo sem link: pede dinheiro, dados, código ou pagamento que a pessoa não esperava;
+pede para devolver um Pix "recebido por engano" para outra conta; ou oferece dinheiro (benefício,
+saque, restituição, reajuste, prêmio) e manda consultar ou resgatar por link, contato ou pagamento
+fora do aplicativo oficial. Já um aviso que só informa (prazo, benefício liberado, serviço
+gratuito, compra feita) e orienta usar por conta própria o portal ou aplicativo oficial, sem link
+estranho, sem cobrança e sem pedir dados, continua "baixo", mesmo citando órgão público ou prazo.
 Se a mensagem só tem urgência e o nome da empresa, oferece o aplicativo oficial como caminho
 e não tem nenhum sinal de golpe, classifique como "baixo" e oriente a conferir pelo aplicativo.
 Um SMS que apenas ENTREGA um código de verificação e avisa para não compartilhá-lo é o próprio
